@@ -60,11 +60,16 @@ simpleCmp :: Eq a => Lit -> a -> a -> IO (Maybe Lit)
 simpleCmp e x y =
   return $ if x == y then Nothing else Just e
 
+-- | Same as 'goldenVsFile', but invokes an external diff command.
 goldenVsFileDiff
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
     -- ^ function that constructs the command line to invoke the diff
-    -- command
+    -- command.
+    --
+    -- E.g.
+    --
+    -- >\ref new -> ["diff", "-u", ref, new]
   -> FilePath -- ^ path to the golden file
   -> FilePath -- ^ path to the output file
   -> IO ()    -- ^ action that produces the output file
