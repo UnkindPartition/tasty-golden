@@ -1,132 +1,93 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-  This package provides support for «golden testing».
-
-  A golden test is an IO action that writes its result to a file.
-  To pass the test, this output file should be identical to the corresponding
-  «golden» file, which contains the correct result for the test.
-
+This module provides a simplified interface. If you want more, see
+  "Test.Framework.Providers.Golden.Advanced"
 -}
 module Test.Framework.Providers.Golden
   ( goldenVsFile
   , goldenVsString
+  , goldenVsFileDiff
   )
   where
 
 import Test.Framework.Providers.API
+import Test.Framework.Providers.Golden.Advanced
 import Text.Printf
 import Data.Maybe
-import Data.ByteString.Lazy as LB
-import Data.ByteString.Lazy.Char8 as LBC
+import qualified Data.ByteString.Lazy as LB
 import System.IO
+import System.Process
+import System.Exit
 import Control.Exception
-
-data TestedOutput
-  = FileOutput
-    { outputFile :: FilePath
-    , genOutput :: IO ()
-    }
-  | StringOutput
-    { outputString :: IO ByteString }
-
-data Golden = Golden
-  { goldenFile :: FilePath
-  , testedOutput :: TestedOutput
-  , comparator :: ByteString -> ByteString -> Bool
-  }
 
 -- | Compare a given file contents against the golden file contents
 goldenVsFile
   :: TestName -- ^ test name
-  -> (ByteString -> ByteString -> Bool) -- ^ comparison function (e.g. ('==') or 'eqIgnoringWS')
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
   -> FilePath -- ^ path to the output file
   -> IO () -- ^ action that creates the output file
   -> Test -- ^ the test verifies that the output file contents is the same as the golden file contents
-goldenVsFile name cmp ref new act = Test name $ Golden ref (FileOutput new act) cmp
+goldenVsFile name ref new act =
+  goldenTest
+    name
+    (vgReadFile showLit ref)
+    (vgLiftIO act >> vgReadFile showLit new)
+    cmp
+    upd
+  where
+  cmp = simpleCmp $ Lit $ printf "Files '%s' and '%s' differ" ref new
+  upd = LB.writeFile ref
 
 -- | Compare a given string against the golden file contents
 goldenVsString
   :: TestName -- ^ test name
-  -> (ByteString -> ByteString -> Bool) -- ^ comparison function (e.g. '==' or 'eqIgnoreSpaces')
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
-  -> IO ByteString -- ^ action that returns a string
+  -> IO LB.ByteString -- ^ action that returns a string
   -> Test -- ^ the test verifies that the returned string is the same as the golden file contents
-goldenVsString name cmp ref act = Test name $ Golden ref (StringOutput act) cmp
-
-data Result
-    = Timeout
-    | Pass
-    | FileDiffers FilePath FilePath
-    | StringDiffers ByteString FilePath
-    | NoNew IOException
-    | NoGolden IOException
-
-instance Show Result where
-    show Timeout  = "Timed out"
-    show Pass     = "OK"
-    show (FileDiffers new ref) =
-      printf "Files '%s' and '%s' differ" new ref
-    show (StringDiffers str ref) =
-      printf "Test output was different from '%s'. It was:\n---\n%s\n---" ref $ LBC.unpack str
-    show (NoNew ex) =
-      printf "Could not read test output: %s" $ show ex
-    show (NoGolden ex) =
-      printf "Could not read golden file: %s" $ show ex
-
-data TestCaseRunning = TestCaseRunning
-
-instance Show TestCaseRunning where
-    show TestCaseRunning = "Running"
-
-instance TestResultlike TestCaseRunning Result where
-    testSucceeded Pass = True
-    testSucceeded _    = False
-
-instance Testlike TestCaseRunning Result Golden where
-    testTypeName _ = "Test Cases"
-
-    runTest topts golden = runImprovingIO $ do
-        let timeout = unK $ topt_timeout topts
-        mb_result <- maybeTimeoutImprovingIO timeout $
-            runGolden golden
-        return $ fromMaybe Timeout mb_result
-
-runGolden :: Golden -> ImprovingIO TestCaseRunning f Result
-runGolden (Golden ref tst cmp) = do
-  yieldImprovement TestCaseRunning
-  liftIO $ compareStuff cmp ref tst
-
-compareStuff :: (ByteString -> ByteString -> Bool) -> FilePath -> TestedOutput -> IO Result
-compareStuff cmp ref tst =
-  withTestedOutput tst $ \strNew differ ->
-  withFile NoGolden ref $ \h ->
-  do
-    strGolden <- LB.hGetContents h
-    -- force the result while the handles are open
-    evaluate $
-      if strGolden `cmp` strNew then Pass else differ ref
+goldenVsString name ref act =
+  goldenTest
+    name
+    (vgReadFile showLit ref)
+    (vgLiftIO act)
+    cmp
+    upd
   where
-  withFile
-    :: (IOException -> Result)
-    -> FilePath
-    -> (Handle -> IO Result)
-    -> IO Result
-  withFile wrapException path act =
-    bracket
-      (try $ openBinaryFile path ReadMode)
-      (either (const $ return ()) hClose)
-      (either (return . wrapException) act)
+  cmp x y = simpleCmp msg x y
+    where
+    msg = Lit $ printf "Test output was different from '%s'. It was: %s" ref (show y)
+  upd = LB.writeFile ref
 
-  withTestedOutput
-    :: TestedOutput
-    -> (ByteString -> (FilePath -> Result) -> IO Result)
-    -> IO Result
-  withTestedOutput (FileOutput path act) proceed = do
-    act
-    withFile NoNew path $ \h -> do
-      cts <- LB.hGetContents h
-      proceed cts $ FileDiffers path
-  withTestedOutput (StringOutput act) proceed = do
-    result <- act
-    proceed result $ StringDiffers result
+simpleCmp :: Eq a => Lit -> a -> a -> IO (Maybe Lit)
+simpleCmp e x y =
+  return $ if x == y then Nothing else Just e
+
+goldenVsFileDiff
+  :: TestName -- ^ test name
+  -> (FilePath -> FilePath -> [String])
+    -- ^ function that constructs the command line to invoke the diff
+    -- command
+  -> FilePath -- ^ path to the golden file
+  -> FilePath -- ^ path to the output file
+  -> IO ()    -- ^ action that produces the output file
+  -> Test
+goldenVsFileDiff name cmdf ref new act =
+  goldenTest
+    name
+    (return ())
+    (vgLiftIO act)
+    cmp
+    upd
+  where
+  cmd = cmdf ref new
+  cmp _ _ | null cmd = error "goldenVsFileDiff: empty command line"
+  cmp _ _ = do
+    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
+    -- strictly read the whole output, so that the process can terminate
+    out <- hGetContents sout
+    evaluate $ length out
+
+    r <- waitForProcess pid
+    return $ case r of
+      ExitSuccess -> Nothing
+      _ -> Just $ Lit out
+
+  upd _ = LB.readFile new >>= LB.writeFile ref

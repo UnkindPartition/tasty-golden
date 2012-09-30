@@ -21,6 +21,7 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  exposed-modules:     Test.Framework.Providers.Golden
-  -- other-modules:       
-  build-depends:       base ==4.*, test-framework, bytestring
+  exposed-modules:     Test.Framework.Providers.Golden,
+                       Test.Framework.Providers.Golden.Advanced
+-- other-modules:
+  build-depends:       base ==4.*, test-framework, bytestring, process
