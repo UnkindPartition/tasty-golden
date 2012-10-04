@@ -13,12 +13,23 @@ description:
 
 license:             MIT
 license-file:        LICENSE
+Homepage:            https://github.com/feuerbach/test-framework-golden
+Bug-reports:         https://github.com/feuerbach/test-framework-golden/issues
 author:              Roman Cheplyaka
 maintainer:          Roman Cheplyaka <roma@ro-che.info>
 -- copyright:           
 category:            Testing
 build-type:          Simple
 cabal-version:       >=1.8
+
+Source-repository head
+  type:     git
+  location: git://github.com/feuerbach/test-framework-golden.git
+
+Source-repository this
+  type:     git
+  location: git://github.com/feuerbach/test-framework-golden.git
+  tag:      v1.1
 
 library
   exposed-modules:     Test.Golden,
