@@ -16,7 +16,6 @@ module Test.Golden.Advanced
 where
 
 import Test.Framework.Providers.API as TF
-import Text.Printf
 import Data.Maybe
 import Data.ByteString.Lazy as LB
 import System.IO

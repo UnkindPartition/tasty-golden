@@ -12,7 +12,6 @@ module Test.Golden
 import Test.Framework.Providers.API
 import Test.Golden.Advanced
 import Text.Printf
-import Data.Maybe
 import qualified Data.ByteString.Lazy as LB
 import System.IO
 import System.Process
