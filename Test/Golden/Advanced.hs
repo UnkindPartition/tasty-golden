@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, Rank2Types, ExistentialQuantification #-}
-module Test.Framework.Providers.Golden.Advanced
+module Test.Golden.Advanced
   ( -- * The main function
     goldenTest,
 

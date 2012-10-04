@@ -2,7 +2,7 @@
 This module provides a simplified interface. If you want more, see
   "Test.Framework.Providers.Golden.Advanced"
 -}
-module Test.Framework.Providers.Golden
+module Test.Golden
   ( goldenVsFile
   , goldenVsString
   , goldenVsFileDiff
@@ -10,7 +10,7 @@ module Test.Framework.Providers.Golden
   where
 
 import Test.Framework.Providers.API
-import Test.Framework.Providers.Golden.Advanced
+import Test.Golden.Advanced
 import Text.Printf
 import Data.Maybe
 import qualified Data.ByteString.Lazy as LB
