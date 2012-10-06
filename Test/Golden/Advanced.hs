@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, Rank2Types, ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses, Rank2Types, ExistentialQuantification,
+             DeriveDataTypeable #-}
 module Test.Golden.Advanced
   ( -- * The main function
     goldenTest,
@@ -22,6 +23,7 @@ import System.IO
 import Control.Exception
 import Control.Monad
 import Control.Applicative
+import Data.Typeable (Typeable)
 
 -- | An action that yields a value (either golden or tested).
 -- 'Either' is for possible errors (file not found, parse error etc.), and CPS
@@ -80,6 +82,7 @@ goldenTest t golden test cmp upd = Test t $ Golden golden test cmp upd
 
 data Golden = forall a e . Show e => Golden
   (ValueGetter e a) (ValueGetter e a) (a -> a -> IO (Maybe e)) (a -> IO ())
+  deriving Typeable
 
 data Result
   = Timeout
