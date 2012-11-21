@@ -1,6 +1,6 @@
 {- |
 This module provides a simplified interface. If you want more, see
-  "Test.Framework.Providers.Golden.Advanced"
+"Test.Golden.Advanced".
 -}
 module Test.Golden
   ( goldenVsFile
