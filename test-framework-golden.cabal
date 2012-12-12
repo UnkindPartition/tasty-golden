@@ -32,8 +32,9 @@ Source-repository this
   tag:      v1.1.1
 
 library
-  exposed-modules:     Test.Golden,
+  exposed-modules:     Test.Golden
                        Test.Golden.Advanced
+                       Test.Golden.Console
   other-modules:
                        Test.Golden.Internal
   build-depends:       base ==4.*, test-framework, bytestring, process, mtl
