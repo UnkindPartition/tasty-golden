@@ -122,8 +122,8 @@ go (Golden getGolden getTested cmp _) =
   ($ (either (return . TestError . show) (const $ return Pass))) $
   runValueGetter $
   do
-    ref <- getGolden
     new <- getTested
+    ref <- getGolden
 
     eq <- vgLiftIO $ cmp ref new
 
