@@ -34,5 +34,6 @@ Source-repository this
 library
   exposed-modules:     Test.Golden,
                        Test.Golden.Advanced
--- other-modules:
+  other-modules:
+                       Test.Golden.Internal
   build-depends:       base ==4.*, test-framework, bytestring, process
