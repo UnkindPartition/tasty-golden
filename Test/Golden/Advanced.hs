@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Test.Golden.Advanced
   ( -- * The main function
     goldenTest,
@@ -14,8 +15,8 @@ import Test.Golden.Internal
 -- | A very general testing function.
 goldenTest
   :: TestName -- ^ test name
-  -> ValueGetter a -- ^ get the golden correct value
-  -> ValueGetter a -- ^ get the tested value
+  -> (forall r . ValueGetter r a) -- ^ get the golden correct value
+  -> (forall r . ValueGetter r a) -- ^ get the tested value
   -> (a -> a -> IO (Maybe String))
     -- ^ comparison function.
     --

@@ -31,8 +31,8 @@ instance Show Error where
 data Golden =
   forall a .
     Golden
-      (ValueGetter a)
-      (ValueGetter a)
+      (forall r . ValueGetter r a)
+      (forall r . ValueGetter r a)
       (a -> a -> IO (Maybe String))
       (a -> IO ())
   deriving Typeable
@@ -40,16 +40,16 @@ data Golden =
 -- | An action that yields a value (either golden or tested).
 -- 'Either' is for possible errors (file not found, parse error etc.), and CPS
 -- allows closing the file handle when using lazy IO to read data.
-newtype ValueGetter a = ValueGetter
-  { runValueGetter :: Er.ErrorT Error (ContT Result IO) a }
+newtype ValueGetter r a = ValueGetter
+  { runValueGetter :: Er.ErrorT Error (ContT r IO) a }
   deriving (Functor, Applicative, Monad, MonadCont, MonadError Error)
 
-instance MonadIO ValueGetter where
+instance MonadIO (ValueGetter r) where
   liftIO a = ValueGetter $ liftIO (try a) >>= either (throwError . EIO) return
 
 -- | Lazily read a file. The file handle will be closed after the
 -- 'ValueGetter' action is run.
-vgReadFile :: FilePath -> ValueGetter ByteString
+vgReadFile :: FilePath -> ValueGetter r ByteString
 vgReadFile path =
   (liftIO . LB.hGetContents =<<) $
   ValueGetter $
