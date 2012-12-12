@@ -9,7 +9,7 @@ module Test.Golden
   )
   where
 
-import Test.Framework.Providers.API
+import Test.Framework.Providers.API hiding (liftIO)
 import Test.Golden.Advanced
 import Text.Printf
 import qualified Data.ByteString.Lazy as LB
@@ -17,6 +17,9 @@ import System.IO
 import System.Process
 import System.Exit
 import Control.Exception
+
+-- trick to avoid an explicit dependency on transformers
+import Control.Monad.Error (liftIO)
 
 -- | Compare a given file contents against the golden file contents
 goldenVsFile
@@ -29,7 +32,7 @@ goldenVsFile name ref new act =
   goldenTest
     name
     (vgReadFile ref)
-    (vgLiftIO act >> vgReadFile new)
+    (liftIO act >> vgReadFile new)
     cmp
     upd
   where
@@ -46,7 +49,7 @@ goldenVsString name ref act =
   goldenTest
     name
     (vgReadFile ref)
-    (vgLiftIO act)
+    (liftIO act)
     cmp
     upd
   where
@@ -77,7 +80,7 @@ goldenVsFileDiff name cmdf ref new act =
   goldenTest
     name
     (return ())
-    (vgLiftIO act)
+    (liftIO act)
     cmp
     upd
   where

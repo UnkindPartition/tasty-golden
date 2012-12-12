@@ -36,4 +36,4 @@ library
                        Test.Golden.Advanced
   other-modules:
                        Test.Golden.Internal
-  build-depends:       base ==4.*, test-framework, bytestring, process
+  build-depends:       base ==4.*, test-framework, bytestring, process, mtl

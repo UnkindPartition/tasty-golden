@@ -4,8 +4,6 @@ module Test.Golden.Advanced
 
     -- * ValueGetter monad
     ValueGetter(..),
-    vgLiftIO,
-    vgError,
     vgReadFile,
   )
 where

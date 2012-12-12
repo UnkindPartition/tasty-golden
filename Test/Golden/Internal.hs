@@ -1,11 +1,15 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, DeriveDataTypeable,
-    MultiParamTypeClasses #-}
+    MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
 module Test.Golden.Internal where
 
 import Data.Typeable (Typeable)
 import Control.Monad
 import Control.Applicative
-import Test.Framework.Providers.API as TF
+import Control.Monad.Cont
+import Control.Monad.Error hiding (Error)
+import qualified Control.Monad.Error as Er
+import Test.Framework.Providers.API hiding (liftIO)
+import qualified Test.Framework.Providers.API as TF
 import Data.ByteString.Lazy as LB
 import Control.Exception
 import System.IO
@@ -13,11 +17,16 @@ import Data.Maybe
 
 data Error
   = EIO IOException
-  | NotEqual String
+  | ENotEqual String
+  | EOther String
+
+instance Er.Error Error where
+  strMsg = EOther
 
 instance Show Error where
   show (EIO e) = show e
-  show (NotEqual s) = s
+  show (ENotEqual s) = s
+  show (EOther s) = s
 
 data Golden =
   forall a .
@@ -31,34 +40,21 @@ data Golden =
 -- | An action that yields a value (either golden or tested).
 -- 'Either' is for possible errors (file not found, parse error etc.), and CPS
 -- allows closing the file handle when using lazy IO to read data.
---
--- This is essentially EitherT over Codensity over IO, but that leads to too
--- many dependencies.
 newtype ValueGetter a = ValueGetter
-  { runValueGetter :: forall r . (Either Error a -> IO r) -> IO r }
+  { runValueGetter :: Er.ErrorT Error (ContT Result IO) a }
+  deriving (Functor, Applicative, Monad, MonadCont, MonadError Error)
 
-instance Monad ValueGetter where
-  return x = ValueGetter $ \k -> k $ Right x
-  ValueGetter a >>= f = ValueGetter $ \k ->
-    a $ \x -> case x of Left e -> k $ Left e; Right y -> runValueGetter (f y) k
-
-instance Functor ValueGetter where fmap = liftM
-instance Applicative ValueGetter where (<*>) = ap; pure = return
-
--- | Lift an 'IO' action to 'ValueGetter' and catch possible 'IOException's
-vgLiftIO :: IO a -> ValueGetter a
-vgLiftIO a = ValueGetter $ \k -> try a >>= k . either (Left . EIO) Right
-
--- | Throw an error in the 'ValueGetter' monad
-vgError :: Error -> ValueGetter a
-vgError e = ValueGetter $ \k -> k $ Left e
+instance MonadIO ValueGetter where
+  liftIO a = ValueGetter $ liftIO (try a) >>= either (throwError . EIO) return
 
 -- | Lazily read a file. The file handle will be closed after the
 -- 'ValueGetter' action is run.
 vgReadFile :: FilePath -> ValueGetter ByteString
 vgReadFile path =
-  (vgLiftIO . LB.hGetContents =<<) $
-  ValueGetter $ \k ->
+  (liftIO . LB.hGetContents =<<) $
+  ValueGetter $
+  ErrorT $
+  ContT $ \k ->
   bracket
     (try $ openBinaryFile path ReadMode)
     (either (const $ return ()) hClose)
@@ -100,13 +96,15 @@ runGolden g = do
 go :: Golden -> IO Result
 go (Golden getGolden getTested cmp _) =
   ($ (either (return . TestError . show) (const $ return Pass))) $
+  runContT $
+  runErrorT $
   runValueGetter $
   do
     new <- getTested
     ref <- getGolden
 
-    eq <- vgLiftIO $ cmp ref new
+    eq <- liftIO $ cmp ref new
 
     case eq of
       Nothing -> return ()
-      Just e -> vgError $ NotEqual e
+      Just e -> throwError $ ENotEqual e
