@@ -45,9 +45,9 @@ instance Monad ValueGetter where
 instance Functor ValueGetter where fmap = liftM
 instance Applicative ValueGetter where (<*>) = ap; pure = return
 
--- | Lift an 'IO' action to 'ValueGetter'
+-- | Lift an 'IO' action to 'ValueGetter' and catch possible 'IOException's
 vgLiftIO :: IO a -> ValueGetter a
-vgLiftIO a = ValueGetter $ \k -> a >>= k . Right
+vgLiftIO a = ValueGetter $ \k -> try a >>= k . either (Left . EIO) Right
 
 -- | Throw an error in the 'ValueGetter' monad
 vgError :: Error -> ValueGetter a
