@@ -7,10 +7,6 @@ module Test.Golden.Advanced
     vgLiftIO,
     vgError,
     vgReadFile,
-
-    -- * Other useful utilities
-    Lit(..),
-    showLit
   )
 where
 
@@ -19,11 +15,10 @@ import Test.Golden.Internal
 
 -- | A very general testing function.
 goldenTest
-  :: Show e
-  => TestName -- ^ test name
-  -> ValueGetter e a -- ^ get the golden correct value
-  -> ValueGetter e a -- ^ get the tested value
-  -> (a -> a -> IO (Maybe e))
+  :: TestName -- ^ test name
+  -> ValueGetter a -- ^ get the golden correct value
+  -> ValueGetter a -- ^ get the tested value
+  -> (a -> a -> IO (Maybe String))
     -- ^ comparison function.
     --
     -- If two values are the same, it should return 'Nothing'. If they are
@@ -35,13 +30,3 @@ goldenTest
   -> (a -> IO ()) -- ^ update the golden file
   -> Test
 goldenTest t golden test cmp upd = Test t $ Golden golden test cmp upd
-
--- | A newtype around 'String' whose 'Show' instance produces the string
--- itself.
-newtype Lit = Lit String
-
-instance Show Lit where show (Lit s) = s
-
--- | @showLit = Lit . show@
-showLit :: Show a => a -> Lit
-showLit = Lit . show

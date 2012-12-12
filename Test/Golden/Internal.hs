@@ -11,8 +11,21 @@ import Control.Exception
 import System.IO
 import Data.Maybe
 
-data Golden = forall a e . Show e => Golden
-  (ValueGetter e a) (ValueGetter e a) (a -> a -> IO (Maybe e)) (a -> IO ())
+data Error
+  = EIO IOException
+  | NotEqual String
+
+instance Show Error where
+  show (EIO e) = show e
+  show (NotEqual s) = s
+
+data Golden =
+  forall a .
+    Golden
+      (ValueGetter a)
+      (ValueGetter a)
+      (a -> a -> IO (Maybe String))
+      (a -> IO ())
   deriving Typeable
 
 -- | An action that yields a value (either golden or tested).
@@ -21,35 +34,35 @@ data Golden = forall a e . Show e => Golden
 --
 -- This is essentially EitherT over Codensity over IO, but that leads to too
 -- many dependencies.
-newtype ValueGetter e a = ValueGetter
-  { runValueGetter :: forall r . (Either e a -> IO r) -> IO r }
+newtype ValueGetter a = ValueGetter
+  { runValueGetter :: forall r . (Either Error a -> IO r) -> IO r }
 
-instance Monad (ValueGetter e) where
+instance Monad ValueGetter where
   return x = ValueGetter $ \k -> k $ Right x
   ValueGetter a >>= f = ValueGetter $ \k ->
     a $ \x -> case x of Left e -> k $ Left e; Right y -> runValueGetter (f y) k
 
-instance Functor (ValueGetter e) where fmap = liftM
-instance Applicative (ValueGetter e) where (<*>) = ap; pure = return
+instance Functor ValueGetter where fmap = liftM
+instance Applicative ValueGetter where (<*>) = ap; pure = return
 
 -- | Lift an 'IO' action to 'ValueGetter'
-vgLiftIO :: IO a -> ValueGetter e a
+vgLiftIO :: IO a -> ValueGetter a
 vgLiftIO a = ValueGetter $ \k -> a >>= k . Right
 
 -- | Throw an error in the 'ValueGetter' monad
-vgError :: e -> ValueGetter e a
+vgError :: Error -> ValueGetter a
 vgError e = ValueGetter $ \k -> k $ Left e
 
 -- | Lazily read a file. The file handle will be closed after the
 -- 'ValueGetter' action is run.
-vgReadFile :: (IOException -> e) -> FilePath -> ValueGetter e ByteString
-vgReadFile wrapException path =
+vgReadFile :: FilePath -> ValueGetter ByteString
+vgReadFile path =
   (vgLiftIO . LB.hGetContents =<<) $
   ValueGetter $ \k ->
   bracket
     (try $ openBinaryFile path ReadMode)
     (either (const $ return ()) hClose)
-    (k . either (Left . wrapException) Right)
+    (k . either (Left . EIO) Right)
 
 data Result
   = Timeout
@@ -96,4 +109,4 @@ go (Golden getGolden getTested cmp _) =
 
     case eq of
       Nothing -> return ()
-      Just e -> vgError e
+      Just e -> vgError $ NotEqual e

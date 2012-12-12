@@ -28,12 +28,12 @@ goldenVsFile
 goldenVsFile name ref new act =
   goldenTest
     name
-    (vgReadFile showLit ref)
-    (vgLiftIO act >> vgReadFile showLit new)
+    (vgReadFile ref)
+    (vgLiftIO act >> vgReadFile new)
     cmp
     upd
   where
-  cmp = simpleCmp $ Lit $ printf "Files '%s' and '%s' differ" ref new
+  cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = LB.writeFile ref
 
 -- | Compare a given string against the golden file contents
@@ -45,17 +45,17 @@ goldenVsString
 goldenVsString name ref act =
   goldenTest
     name
-    (vgReadFile showLit ref)
+    (vgReadFile ref)
     (vgLiftIO act)
     cmp
     upd
   where
   cmp x y = simpleCmp msg x y
     where
-    msg = Lit $ printf "Test output was different from '%s'. It was: %s" ref (show y)
+    msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
   upd = LB.writeFile ref
 
-simpleCmp :: Eq a => Lit -> a -> a -> IO (Maybe Lit)
+simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
 simpleCmp e x y =
   return $ if x == y then Nothing else Just e
 
@@ -92,6 +92,6 @@ goldenVsFileDiff name cmdf ref new act =
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just $ Lit out
+      _ -> Just out
 
   upd _ = LB.readFile new >>= LB.writeFile ref
