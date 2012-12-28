@@ -6,6 +6,7 @@ module Test.Golden.Advanced
     -- * ValueGetter monad
     ValueGetter(..),
     vgReadFile,
+    Error(..)
   )
 where
 
