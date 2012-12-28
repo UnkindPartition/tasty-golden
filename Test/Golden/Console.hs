@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards #-}
 
-module Test.Golden.Console where
+module Test.Golden.Console (defaultMain, defaultMainWithArgs) where
 
 import Test.Framework hiding (defaultMain, defaultMainWithArgs)
 import Test.Framework.Runners.API
