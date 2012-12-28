@@ -1,5 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards #-}
-
+-- | Use functions from this module instead of
+-- "Test.Framework.Runners.Console" to enable golden test management
+-- options.
 module Test.Golden.Console (defaultMain, defaultMainWithArgs) where
 
 import Test.Framework hiding (defaultMain, defaultMainWithArgs)
