@@ -4,7 +4,7 @@ module Test.Golden.Console where
 
 import Test.Framework hiding (defaultMain, defaultMainWithArgs)
 import Test.Framework.Runners.Options
-import Test.Framework.Runners.Core
+import Test.Framework.Runners.API
 import Test.Framework.Runners.Console hiding (defaultMain, defaultMainWithArgs)
 import qualified Test.Framework.Runners.Console as TF
 import System.Console.GetOpt
