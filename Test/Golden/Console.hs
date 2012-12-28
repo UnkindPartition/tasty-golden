@@ -3,9 +3,7 @@
 module Test.Golden.Console where
 
 import Test.Framework hiding (defaultMain, defaultMainWithArgs)
-import Test.Framework.Runners.Options
 import Test.Framework.Runners.API
-import Test.Framework.Runners.Console hiding (defaultMain, defaultMainWithArgs)
 import qualified Test.Framework.Runners.Console as TF
 import System.Console.GetOpt
 import System.IO
@@ -49,6 +47,7 @@ acceptGoldenTest (Golden _ getTested _ update) =
 
 data Cmd = Accept
 
+combinedOptions :: [OptDescr (Either Cmd SuppliedRunnerOptions)]
 combinedOptions =
   map (fmap Right) optionsDescription ++
   map (fmap Left)
@@ -62,11 +61,12 @@ defaultMain tests = do
   args <- getArgs
   defaultMainWithArgs tests args
 
+defaultMainWithArgs :: [Test] -> [String] -> IO ()
 defaultMainWithArgs tests args = do
   prog_name <- getProgName
   let usage_header = "Usage: " ++ prog_name ++ " [OPTIONS]"
 
-      (opts, nonopts, errMsgs) = getOpt Permute combinedOptions args
+      (opts, _nonopts, errMsgs) = getOpt Permute combinedOptions args
 
       err = do
         hPutStrLn stderr $
@@ -85,6 +85,7 @@ defaultMainWithArgs tests args = do
           TF.defaultMainWithOpts tests tfOpts
     _ -> err
 
+doAccept :: [TestPattern] -> [Test] -> IO ()
 doAccept pats tests = do
   gs <- concat <$> mapM (getGoldenTests pats) tests
   forM_ gs $ \(n,g) -> do
