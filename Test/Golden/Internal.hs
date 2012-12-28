@@ -3,7 +3,6 @@
 module Test.Golden.Internal where
 
 import Data.Typeable (Typeable)
-import Control.Monad
 import Control.Applicative
 import Control.Monad.Cont
 import Control.Monad.Error hiding (Error)
