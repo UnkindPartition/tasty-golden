@@ -17,7 +17,7 @@ import Data.Typeable
 import Data.Either
 import Control.Applicative
 import Control.Monad.Cont
-import Control.Monad.Error hiding (Error)
+import Control.Exception
 import Text.Printf
 
 newtype TestList = TestList { testList :: IO [(TestName, Golden)] }
@@ -40,12 +40,9 @@ instance TestRunner TestList where
 getGoldenTests :: [TestPattern] -> Test -> IO [(TestName, Golden)]
 getGoldenTests pats = testList . runTestTree mempty pats
 
-acceptGoldenTest :: Golden -> IO (Either Error ())
+acceptGoldenTest :: Golden -> IO (Either SomeException ())
 acceptGoldenTest (Golden _ getTested _ update) =
-  flip runContT return $
-  runErrorT $
-  runValueGetter $
-  liftIO . update =<< getTested
+  vgRun $ liftIO . update =<< getTested
 
 data Cmd = Accept
 
