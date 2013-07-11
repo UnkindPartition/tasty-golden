@@ -12,6 +12,7 @@ import Control.Exception
 import System.IO
 import Data.Maybe
 
+-- | See 'goldenTest' for explanation of the fields
 data Golden =
   forall a .
     Golden
@@ -22,8 +23,8 @@ data Golden =
   deriving Typeable
 
 -- | An action that yields a value (either golden or tested).
--- 'Either' is for possible errors (file not found, parse error etc.), and CPS
--- allows closing the file handle when using lazy IO to read data.
+--
+-- CPS allows closing the file handle when using lazy IO to read data.
 newtype ValueGetter r a = ValueGetter
   { runValueGetter :: ContT r IO a }
   deriving (Functor, Applicative, Monad, MonadCont, MonadIO)
