@@ -5,8 +5,7 @@ module Test.Golden.Internal where
 import Data.Typeable (Typeable)
 import Control.Applicative
 import Control.Monad.Cont
-import Test.Framework.Providers.API hiding (liftIO)
-import qualified Test.Framework.Providers.API as TF
+import Test.Tasty.Providers
 import Data.ByteString.Lazy as LB
 import Control.Exception
 import System.IO
@@ -42,52 +41,16 @@ vgReadFile path =
     k
 
 -- | Ensures that the result is fully evaluated (so that lazy file handles
--- can be closed), and catches synchronous exceptions.
-vgRun :: ValueGetter r r -> IO (Either SomeException r)
-vgRun (ValueGetter a) = handleSyncExceptions $ runContT a evaluate
+-- can be closed)
+vgRun :: ValueGetter r r -> IO r
+vgRun (ValueGetter a) = runContT a evaluate
 
-data Result
-  = Timeout
-  | Pass
-  | TestError String
+instance IsTest Golden where
+  run opts golden _ = runGolden golden
+  testOptions = return []
 
-instance Show Result where
-  show Timeout  = "Timed out"
-  show Pass     = "OK"
-  show (TestError s) = s
-
-data TestCaseRunning = TestCaseRunning
-
-instance Show TestCaseRunning where
-  show TestCaseRunning = "Running"
-
-instance TestResultlike TestCaseRunning Result where
-  testSucceeded Pass = True
-  testSucceeded _    = False
-
-instance Testlike TestCaseRunning Result Golden where
-  testTypeName _ = "Test Cases"
-
-  runTest topts golden = runImprovingIO $ do
-    let timeout = unK $ topt_timeout topts
-    mb_result <- maybeTimeoutImprovingIO timeout $
-        runGolden golden
-    return $ fromMaybe Timeout mb_result
-
-runGolden :: Golden -> ImprovingIO TestCaseRunning f Result
-runGolden g = do
-  yieldImprovement TestCaseRunning
-  TF.liftIO $ go g
-
-handleSyncExceptions :: IO a -> IO (Either SomeException a)
-handleSyncExceptions a =
-  catch (Right <$> a) $ \e ->
-    case fromException e of
-      Just async -> throwIO (async :: AsyncException)
-      Nothing -> return $ Left e
-
-go :: Golden -> IO Result
-go (Golden getGolden getTested cmp _) = do
+runGolden :: Golden -> IO Result
+runGolden (Golden getGolden getTested cmp _) = do
   result <- vgRun $ do
     new <- getTested
     ref <- getGolden
@@ -95,6 +58,7 @@ go (Golden getGolden getTested cmp _) = do
 
   return $
     case result of
-      Left e -> TestError $ show e
-      Right (Just reason) -> TestError reason
-      Right Nothing -> Pass
+      Just reason ->
+        Result False reason
+      Nothing ->
+        Result True ""

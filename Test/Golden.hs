@@ -9,7 +9,7 @@ module Test.Golden
   )
   where
 
-import Test.Framework.Providers.API hiding (liftIO)
+import Test.Tasty.Providers
 import Test.Golden.Advanced
 import Text.Printf
 import qualified Data.ByteString.Lazy as LB
@@ -27,7 +27,7 @@ goldenVsFile
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
   -> FilePath -- ^ path to the output file
   -> IO () -- ^ action that creates the output file
-  -> Test -- ^ the test verifies that the output file contents is the same as the golden file contents
+  -> TestTree -- ^ the test verifies that the output file contents is the same as the golden file contents
 goldenVsFile name ref new act =
   goldenTest
     name
@@ -44,7 +44,7 @@ goldenVsString
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
   -> IO LB.ByteString -- ^ action that returns a string
-  -> Test -- ^ the test verifies that the returned string is the same as the golden file contents
+  -> TestTree -- ^ the test verifies that the returned string is the same as the golden file contents
 goldenVsString name ref act =
   goldenTest
     name
@@ -75,7 +75,7 @@ goldenVsFileDiff
   -> FilePath -- ^ path to the golden file
   -> FilePath -- ^ path to the output file
   -> IO ()    -- ^ action that produces the output file
-  -> Test
+  -> TestTree
 goldenVsFileDiff name cmdf ref new act =
   goldenTest
     name

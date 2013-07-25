@@ -9,7 +9,7 @@ module Test.Golden.Advanced
   )
 where
 
-import Test.Framework.Providers.API
+import Test.Tasty.Providers
 import Test.Golden.Internal
 
 -- | A very general testing function.
@@ -27,5 +27,5 @@ goldenTest
     -- The function may use 'IO', for example, to launch an external @diff@
     -- command.
   -> (a -> IO ()) -- ^ update the golden file
-  -> Test
-goldenTest t golden test cmp upd = Test t $ Golden golden test cmp upd
+  -> TestTree
+goldenTest t golden test cmp upd = singleTest t $ Golden golden test cmp upd
