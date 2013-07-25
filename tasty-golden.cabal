@@ -29,12 +29,12 @@ Source-repository this
   tag:      v1.2
 
 library
-  exposed-modules:     Test.Golden
-                       Test.Golden.Advanced
-                       Test.Golden.Console
-                       Test.Golden.Manage
+  exposed-modules:     Test.Tasty.Golden
+                       Test.Tasty.Golden.Advanced
+                       Test.Tasty.Golden.Console
+                       Test.Tasty.Golden.Manage
   other-modules:
-                       Test.Golden.Internal
+                       Test.Tasty.Golden.Internal
   build-depends:
     base ==4.*,
     tasty,

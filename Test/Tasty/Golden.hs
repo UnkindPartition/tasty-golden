@@ -1,8 +1,8 @@
 {- |
 This module provides a simplified interface. If you want more, see
-"Test.Golden.Advanced".
+"Test.Tasty.Golden.Advanced".
 -}
-module Test.Golden
+module Test.Tasty.Golden
   ( goldenVsFile
   , goldenVsString
   , goldenVsFileDiff
@@ -10,7 +10,7 @@ module Test.Golden
   where
 
 import Test.Tasty.Providers
-import Test.Golden.Advanced
+import Test.Tasty.Golden.Advanced
 import Text.Printf
 import qualified Data.ByteString.Lazy as LB
 import System.IO

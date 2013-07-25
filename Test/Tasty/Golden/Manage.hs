@@ -3,7 +3,7 @@
 --
 -- See "Test.Tasty.Golden.Console" for a simple way to include golden
 -- test management in your test suite.
-module Test.Golden.Manage
+module Test.Tasty.Golden.Manage
   ( getGoldenTests
   , acceptGoldenTest
   , acceptGoldenTests
@@ -13,7 +13,7 @@ module Test.Golden.Manage
 import Test.Tasty
 import Test.Tasty.Runners
 import Test.Tasty.Options
-import Test.Golden.Internal
+import Test.Tasty.Golden.Internal
 import Data.Maybe
 import Data.Typeable
 import Control.Monad.Cont

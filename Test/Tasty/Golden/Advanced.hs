@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-module Test.Golden.Advanced
+module Test.Tasty.Golden.Advanced
   ( -- * The main function
     goldenTest,
 
@@ -10,7 +10,7 @@ module Test.Golden.Advanced
 where
 
 import Test.Tasty.Providers
-import Test.Golden.Internal
+import Test.Tasty.Golden.Internal
 
 -- | A very general testing function.
 goldenTest

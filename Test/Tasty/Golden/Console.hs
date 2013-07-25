@@ -2,7 +2,7 @@
 -- | Use functions from this module instead of
 -- "Test.Framework.Runners.Console" to enable golden test management
 -- options.
-module Test.Golden.Console {-(defaultMain, defaultMainWithArgs)-} where
+module Test.Tasty.Golden.Console {-(defaultMain, defaultMainWithArgs)-} where
 
 import Test.Tasty
 import Test.Tasty.Runners
@@ -11,7 +11,7 @@ import Test.Tasty.Options
 import System.Console.GetOpt
 import System.IO
 import System.Environment
-import Test.Golden.Internal
+import Test.Tasty.Golden.Internal
 import Data.Monoid
 import Data.Maybe
 import Data.Typeable
