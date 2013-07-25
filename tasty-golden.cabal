@@ -32,6 +32,7 @@ library
   exposed-modules:     Test.Golden
                        Test.Golden.Advanced
                        Test.Golden.Console
+                       Test.Golden.Manage
   other-modules:
                        Test.Golden.Internal
   build-depends:
