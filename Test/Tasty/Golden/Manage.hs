@@ -8,8 +8,6 @@ module Test.Tasty.Golden.Manage
   , goldenManagerParser
 
   -- * Programmatic API
-  , getGoldenTests
-  , acceptGoldenTest
   , acceptGoldenTests
   )
   where
