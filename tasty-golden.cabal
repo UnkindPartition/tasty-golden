@@ -31,7 +31,6 @@ Source-repository this
 library
   exposed-modules:     Test.Tasty.Golden
                        Test.Tasty.Golden.Advanced
-                       Test.Tasty.Golden.Console
                        Test.Tasty.Golden.Manage
   other-modules:
                        Test.Tasty.Golden.Internal
