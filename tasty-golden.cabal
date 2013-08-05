@@ -1,5 +1,5 @@
 name:                tasty-golden
-version:             1.2
+version:             2.0
 synopsis:            Golden tests support for tasty
 description:
   This package provides support for «golden testing».
@@ -22,11 +22,6 @@ cabal-version:       >=1.8
 Source-repository head
   type:     git
   location: git://github.com/feuerbach/tasty-golden.git
-
-Source-repository this
-  type:     git
-  location: git://github.com/feuerbach/tasty-golden.git
-  tag:      v1.2
 
 library
   exposed-modules:     Test.Tasty.Golden
