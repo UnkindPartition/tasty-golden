@@ -21,6 +21,7 @@ import Data.Typeable
 import Control.Monad.Cont
 import Text.Printf
 import Options.Applicative
+import System.Exit
 
 -- | Parse possible management commands. Fail (as a parser) if no
 -- management commands are given.
@@ -45,7 +46,8 @@ defaultMainWithRunner :: Runner -> TestTree -> IO ()
 defaultMainWithRunner runner testTree = do
   let
     runTests opts =
-      runner opts testTree =<< launchTestTree opts testTree
+      execRunner runner opts testTree >>= \ok ->
+        if ok then exitSuccess else exitFailure
 
     optsParser = treeOptionParser testTree
 
