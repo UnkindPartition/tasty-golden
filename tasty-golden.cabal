@@ -35,4 +35,6 @@ library
     bytestring,
     process,
     mtl,
-    optparse-applicative
+    optparse-applicative,
+    filepath,
+    temporary >= 1.1

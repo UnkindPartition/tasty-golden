@@ -6,6 +6,7 @@ module Test.Tasty.Golden
   ( goldenVsFile
   , goldenVsString
   , goldenVsFileDiff
+  , goldenVsStringDiff
   )
   where
 
@@ -14,9 +15,12 @@ import Test.Tasty.Golden.Advanced
 import Text.Printf
 import qualified Data.ByteString.Lazy as LB
 import System.IO
+import System.IO.Temp
 import System.Process
 import System.Exit
+import System.FilePath
 import Control.Exception
+import Control.Monad
 
 -- trick to avoid an explicit dependency on transformers
 import Control.Monad.Error (liftIO)
@@ -98,3 +102,46 @@ goldenVsFileDiff name cmdf ref new act =
       _ -> Just out
 
   upd _ = LB.readFile new >>= LB.writeFile ref
+
+-- | Same as 'goldenVsString', but invokes an external diff command.
+goldenVsStringDiff
+  :: TestName -- ^ test name
+  -> (FilePath -> FilePath -> [String])
+    -- ^ function that constructs the command line to invoke the diff
+    -- command.
+    --
+    -- E.g.
+    --
+    -- >\ref new -> ["diff", "-u", ref, new]
+  -> FilePath -- ^ path to the golden file
+  -> IO LB.ByteString -- ^ action that returns a string
+  -> TestTree
+goldenVsStringDiff name cmdf ref act =
+  goldenTest
+    name
+    (vgReadFile ref)
+    (liftIO act)
+    cmp
+    upd
+  where
+  template = takeFileName ref <.> "actual"
+  cmp _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
+
+    -- Write act output to temporary ("new") file
+    LB.hPut tmpHandle actBS >> hFlush tmpHandle
+
+    let cmd = cmdf ref tmpFile
+
+    when (null cmd) $ error "goldenVsFileDiff: empty command line"
+
+    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
+    -- strictly read the whole output, so that the process can terminate
+    out <- hGetContents sout
+    _ <- evaluate $ length out
+
+    r <- waitForProcess pid
+    return $ case r of
+      ExitSuccess -> Nothing
+      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
+
+  upd = LB.writeFile ref
