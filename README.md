@@ -7,8 +7,9 @@ To pass the test, this output file should be identical to the corresponding
 Status
 ------
 
-This library is deprecated in favour of [tasty-golden][].
+This library is deprecated in favour of [tasty-golden][]. `tasty-golden` has
+some additional features, such as test management interface.
 
-I will continue to provide support for it if requested.
+However, I will continue to provide support for `test-framework-golden` if requested.
 
 [tasty-golden]: https://github.com/feuerbach/tasty-golden
