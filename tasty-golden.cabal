@@ -37,4 +37,5 @@ library
     mtl,
     optparse-applicative,
     filepath,
-    temporary >= 1.1
+    temporary >= 1.1,
+    Diff >= 0.3 && < 1.0

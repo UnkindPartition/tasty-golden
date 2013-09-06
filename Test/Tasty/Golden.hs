@@ -7,6 +7,8 @@ module Test.Tasty.Golden
   , goldenVsString
   , goldenVsFileDiff
   , goldenVsStringDiff
+  , goldenVsFileDiffExternal
+  , goldenVsStringDiffExternal
   )
   where
 
@@ -21,6 +23,9 @@ import System.Exit
 import System.FilePath
 import Control.Exception
 import Control.Monad
+import Data.Algorithm.Diff
+import Data.Algorithm.DiffOutput
+import Data.Word (Word8)
 
 -- trick to avoid an explicit dependency on transformers
 import Control.Monad.Error (liftIO)
@@ -66,8 +71,58 @@ simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
 simpleCmp e x y =
   return $ if x == y then Nothing else Just e
 
--- | Same as 'goldenVsFile', but invokes an external diff command.
+-- | Same as 'goldenVsFile', but produces a diff of the golden file
+-- and the test file
 goldenVsFileDiff
+  :: TestName -- ^ test name
+  -> FilePath -- ^ path to the golden file
+  -> FilePath -- ^ path to the output file
+  -> IO ()    -- ^ the action that produces the output file
+  -> TestTree
+goldenVsFileDiff name ref new act =
+  goldenTest
+    name
+    (vgReadFile ref)
+    (liftIO act >> vgReadFile new)
+    cmp
+    upd
+  where
+    cmp x y = diffCmp msg x y
+    msg = "Test output was different from expected."
+    upd = LB.writeFile ref
+
+-- | Same as 'goldenVsString', but produces a diff of the golden file
+-- and the test output
+goldenVsStringDiff
+  :: TestName -- ^ test name
+  -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
+  -> IO LB.ByteString -- ^ the action that returns a string
+  -> TestTree -- ^ the test verifies that the returned string is the same as the golden file contents
+goldenVsStringDiff name ref act =
+  goldenTest
+    name
+    (vgReadFile ref)
+    (liftIO act)
+    cmp
+    upd
+  where
+  cmp x y = diffCmp msg x y
+    where
+    msg = "Test output was different from expected."
+  upd = LB.writeFile ref
+    
+diffCmp :: String -> LB.ByteString -> LB.ByteString -> IO (Maybe String)
+diffCmp e x y =
+  let diff = getGroupedDiff (map show $ bslines x) (map show $ bslines y)
+      same = all isBoth
+      isBoth (Both _ _) = True
+      isBoth _          = False
+      bslines = LB.split (toEnum $ fromEnum '\n')
+  in return $ if same diff then Nothing
+              else Just $ e ++ "\n" ++ ppDiff diff
+
+-- | Same as 'goldenVsFileDiff', but invokes an external diff command.
+goldenVsFileDiffExternal
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
     -- ^ function that constructs the command line to invoke the diff
@@ -80,7 +135,7 @@ goldenVsFileDiff
   -> FilePath -- ^ path to the output file
   -> IO ()    -- ^ action that produces the output file
   -> TestTree
-goldenVsFileDiff name cmdf ref new act =
+goldenVsFileDiffExternal name cmdf ref new act =
   goldenTest
     name
     (return ())
@@ -103,8 +158,8 @@ goldenVsFileDiff name cmdf ref new act =
 
   upd _ = LB.readFile new >>= LB.writeFile ref
 
--- | Same as 'goldenVsString', but invokes an external diff command.
-goldenVsStringDiff
+-- | Same as 'goldenVsStringDiff', but invokes an external diff command.
+goldenVsStringDiffExternal
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
     -- ^ function that constructs the command line to invoke the diff
@@ -116,7 +171,7 @@ goldenVsStringDiff
   -> FilePath -- ^ path to the golden file
   -> IO LB.ByteString -- ^ action that returns a string
   -> TestTree
-goldenVsStringDiff name cmdf ref act =
+goldenVsStringDiffExternal name cmdf ref act =
   goldenTest
     name
     (vgReadFile ref)
