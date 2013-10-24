@@ -31,10 +31,11 @@ library
                        Test.Tasty.Golden.Internal
   build-depends:
     base ==4.*,
-    tasty >= 0.2,
+    tasty >= 0.4,
     bytestring,
     process,
     mtl,
     optparse-applicative,
     filepath,
-    temporary >= 1.1
+    temporary >= 1.1,
+    tagged

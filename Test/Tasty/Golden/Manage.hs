@@ -4,78 +4,58 @@ module Test.Tasty.Golden.Manage
   (
   -- * Command line helpers
     defaultMain
-  , defaultMainWithRunner
-  , goldenManagerParser
+
+  -- * The ingredient
+  , acceptingTests
+  , AcceptTests(..)
 
   -- * Programmatic API
   , acceptGoldenTests
   )
   where
 
-import Test.Tasty hiding (defaultMainWithRunner, defaultMain)
-import Test.Tasty.Runners hiding (defaultMainWithRunner)
+import Test.Tasty hiding (defaultMain)
+import Test.Tasty.Runners
 import Test.Tasty.Options
 import Test.Tasty.Golden.Internal
 import Data.Maybe
 import Data.Typeable
+import Data.Tagged
+import Data.Proxy
 import Control.Monad.Cont
 import Text.Printf
 import Options.Applicative
 import System.Exit
 
--- | Parse possible management commands. Fail (as a parser) if no
--- management commands are given.
-goldenManagerParser :: Parser (OptionSet -> TestTree -> IO ())
-goldenManagerParser =
-  flag'
-    acceptGoldenTests
-    (  long "accept"
-    <> help "Accept current results of golden tests"
-    )
-
--- | Parse the command line arguments and run the tests using the provided
--- runner.
---
--- If any golden test management commands are specified, execute them
--- instead.
---
--- Note: this is a replacement for "Test.Tasty"'s 'defaultMainWithRunner'
--- and has a name conflict with it. You'll need to use @hiding@ or
--- a similar means to resolve this.
-defaultMainWithRunner :: Runner -> TestTree -> IO ()
-defaultMainWithRunner runner testTree = do
-  let
-    runTests opts =
-      execRunner runner opts testTree >>= \ok ->
-        if ok then exitSuccess else exitFailure
-
-    optsParser = treeOptionParser testTree
-
-    -- partially apply goldenManagerParser to testTree
-    mgmntParser :: Parser (OptionSet -> IO ())
-    mgmntParser =
-      (\mgr opts -> mgr opts testTree) <$> goldenManagerParser
-
-    parser =
-      (mgmntParser <|> pure runTests) <*> optsParser
-
-  join $ execParser $
-    info (helper <*> parser)
-    ( fullDesc <>
-      header "Mmm... tasty test suite (with golden test management capabilities)"
-    )
-
--- | Parse the command line arguments and run the tests using the standard
--- console runner.
---
--- If any golden test management commands are specified, execute them
--- instead.
---
--- Note: this is a replacement for "Test.Tasty"'s 'defaultMain'
--- and has a name conflict with it. You'll need to use @hiding@ or
--- a similar means to resolve this.
+-- | Like @defaultMain@ from the main tasty package, but also includes the
+-- golden test management capabilities.
 defaultMain :: TestTree -> IO ()
-defaultMain = defaultMainWithRunner runUI
+defaultMain = defaultMainWithIngredients [acceptingTests, listingTests, consoleTestReporter]
+
+-- | This option, when set to 'True', specifies that we should run in the
+-- «accept tests» mode
+newtype AcceptTests = AcceptTests Bool
+  deriving (Eq, Ord, Typeable)
+instance IsOption AcceptTests where
+  defaultValue = AcceptTests False
+  parseValue = fmap AcceptTests . safeRead
+  optionName = return "accept"
+  optionHelp = return "Accept current results of golden tests"
+  optionCLParser =
+    fmap AcceptTests $
+    switch
+      (  long (untag (optionName :: Tagged AcceptTests String))
+      <> help (untag (optionHelp :: Tagged AcceptTests String))
+      )
+
+acceptingTests :: Ingredient
+acceptingTests = TestManager [Option (Proxy :: Proxy AcceptTests)] $
+  \opts tree ->
+    case lookupOption opts of
+      AcceptTests False -> Nothing
+      AcceptTests True -> Just $ do
+        acceptGoldenTests opts tree
+        return True
 
 -- | Get the list of all golden tests in a given test tree
 getGoldenTests :: OptionSet -> TestTree -> [(TestName, Golden)]
