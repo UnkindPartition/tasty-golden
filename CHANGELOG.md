@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.2
+-----------
+
+Migrate to ingredients
+
 Version 2.1
 -----------
 

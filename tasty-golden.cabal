@@ -1,5 +1,5 @@
 name:                tasty-golden
-version:             2.1
+version:             2.2
 synopsis:            Golden tests support for tasty
 description:
   This package provides support for «golden testing».
