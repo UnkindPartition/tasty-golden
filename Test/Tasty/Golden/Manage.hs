@@ -63,6 +63,7 @@ getGoldenTests =
   foldTestTree
     (\_ name t -> fmap ((,) name) $ maybeToList $ cast t)
     (const id)
+    (const id)
 
 -- | «Accept» a golden test, i.e. reset the golden value to the currently
 -- produced value
