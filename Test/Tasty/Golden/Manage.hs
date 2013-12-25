@@ -61,9 +61,7 @@ acceptingTests = TestManager [Option (Proxy :: Proxy AcceptTests)] $
 getGoldenTests :: OptionSet -> TestTree -> [(TestName, Golden)]
 getGoldenTests =
   foldTestTree
-    (\_ name t -> fmap ((,) name) $ maybeToList $ cast t)
-    (const id)
-    (const id)
+    trivialFold { foldSingle = \_ name t -> fmap ((,) name) $ maybeToList $ cast t }
 
 -- | «Accept» a golden test, i.e. reset the golden value to the currently
 -- produced value
