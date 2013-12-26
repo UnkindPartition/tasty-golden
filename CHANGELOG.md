@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.2.0.2
+---------------
+
+Update to work with `tasty-0.7`
+
 Version 2.2.0.1
 ---------------
 
