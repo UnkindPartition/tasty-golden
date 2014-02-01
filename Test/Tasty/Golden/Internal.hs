@@ -59,6 +59,6 @@ runGolden (Golden getGolden getTested cmp _) = do
   return $
     case result of
       Just reason ->
-        Result False reason
+        testFailed reason
       Nothing ->
-        Result True ""
+        testPassed ""

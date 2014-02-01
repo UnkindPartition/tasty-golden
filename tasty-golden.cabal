@@ -32,7 +32,7 @@ library
                        Test.Tasty.Golden.Internal
   build-depends:
     base ==4.*,
-    tasty >= 0.7,
+    tasty >= 0.8,
     bytestring,
     process,
     mtl,
