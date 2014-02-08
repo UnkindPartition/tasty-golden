@@ -13,3 +13,6 @@ some additional features, such as test management interface.
 However, I will continue to provide support for `test-framework-golden` if requested.
 
 [tasty-golden]: https://github.com/feuerbach/tasty-golden
+
+[Oliver Charles](https://github.com/ocharles) is the backup maintainer. Please
+get in touch with him if the primary maintainer cannot be reached.
