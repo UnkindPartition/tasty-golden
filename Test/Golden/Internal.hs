@@ -8,7 +8,7 @@ import Control.Monad.Cont
 import Test.Framework.Providers.API hiding (liftIO)
 import qualified Test.Framework.Providers.API as TF
 import Data.ByteString.Lazy as LB
-import Control.Exception
+import Control.Exception as E
 import System.IO
 import Data.Maybe
 
@@ -81,7 +81,7 @@ runGolden g = do
 
 handleSyncExceptions :: IO a -> IO (Either SomeException a)
 handleSyncExceptions a =
-  catch (Right <$> a) $ \e ->
+  E.catch (Right <$> a) $ \e ->
     case fromException e of
       Just async -> throwIO (async :: AsyncException)
       Nothing -> return $ Left e
