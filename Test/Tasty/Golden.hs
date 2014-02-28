@@ -1,6 +1,14 @@
 {- |
 This module provides a simplified interface. If you want more, see
 "Test.Tasty.Golden.Advanced".
+
+Note about filenames. They are looked up in the usual way, thus relative
+names are relative to the processes current working directory.
+It is common to run tests from the package's root directory (via @cabal
+test@ or @cabal install --enable-tests@), so if your test files are under
+the @tests\/@ subdirectory, your relative file names should start with
+@tests\/@ (even if your @test.hs@ is itself under @tests\/@, too).
+
 -}
 module Test.Tasty.Golden
   ( goldenVsFile
