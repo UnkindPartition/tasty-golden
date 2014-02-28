@@ -39,4 +39,5 @@ library
     optparse-applicative,
     filepath,
     temporary >= 1.1,
-    tagged
+    tagged,
+    deepseq

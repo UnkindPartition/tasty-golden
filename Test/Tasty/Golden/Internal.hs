@@ -4,6 +4,7 @@ module Test.Tasty.Golden.Internal where
 
 import Control.Applicative
 import Control.Monad.Cont
+import Control.DeepSeq
 import Control.Exception
 import Data.Typeable (Typeable)
 import Data.ByteString.Lazy as LB
@@ -51,14 +52,16 @@ instance IsTest Golden where
 
 runGolden :: Golden -> IO Result
 runGolden (Golden getGolden getTested cmp _) = do
-  result <- vgRun $ do
+  vgRun $ do
     new <- getTested
     ref <- getGolden
-    liftIO $ cmp ref new
+    result <- liftIO $ cmp ref new
 
-  return $
     case result of
-      Just reason ->
-        testFailed reason
+      Just reason -> do
+        -- Make sure that the result is fully evaluated and doesn't depend
+        -- on yet un-read lazy input
+        liftIO $ evaluate $ reason `deepseq` ()
+        return $ testFailed reason
       Nothing ->
-        testPassed ""
+        return $ testPassed ""
