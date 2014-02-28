@@ -2,14 +2,14 @@
     MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
 module Test.Tasty.Golden.Internal where
 
-import Data.Typeable (Typeable)
 import Control.Applicative
 import Control.Monad.Cont
-import Test.Tasty.Providers
-import Data.ByteString.Lazy as LB
 import Control.Exception
-import System.IO
+import Data.Typeable (Typeable)
+import Data.ByteString.Lazy as LB
 import Data.Maybe
+import System.IO
+import Test.Tasty.Providers
 
 -- | See 'goldenTest' for explanation of the fields
 data Golden =
