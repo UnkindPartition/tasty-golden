@@ -8,7 +8,6 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Typeable (Typeable)
 import Data.ByteString.Lazy as LB
-import Data.Maybe
 import Data.Proxy
 import System.IO
 import Test.Tasty (localOption) -- for docs only

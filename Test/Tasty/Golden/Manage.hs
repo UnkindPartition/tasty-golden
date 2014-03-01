@@ -18,14 +18,12 @@ import Test.Tasty hiding (defaultMain)
 import Test.Tasty.Runners
 import Test.Tasty.Options
 import Test.Tasty.Golden.Internal
-import Data.Maybe
 import Data.Typeable
 import Data.Tagged
 import Data.Proxy
 import Control.Monad.Cont
 import Text.Printf
 import Options.Applicative
-import System.Exit
 
 -- | Like @defaultMain@ from the main tasty package, but also includes the
 -- golden test management capabilities.

@@ -30,6 +30,9 @@ library
                        Test.Tasty.Golden.Manage
   other-modules:
                        Test.Tasty.Golden.Internal
+
+  ghc-options: -Wall
+
   build-depends:
     base ==4.*,
     tasty >= 0.8,
