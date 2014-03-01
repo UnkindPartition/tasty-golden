@@ -15,6 +15,7 @@ module Test.Tasty.Golden
   , goldenVsString
   , goldenVsFileDiff
   , goldenVsStringDiff
+  , GoldenFileFormat(..)
   )
   where
 

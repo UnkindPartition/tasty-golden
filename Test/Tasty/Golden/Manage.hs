@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards, DeriveDataTypeable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards, DeriveDataTypeable, ImplicitParams #-}
 -- | Golden test management
 module Test.Tasty.Golden.Manage
   (
@@ -58,14 +58,19 @@ acceptingTests = TestManager [Option (Proxy :: Proxy AcceptTests)] $
         return True
 
 -- | Get the list of all golden tests in a given test tree
-getGoldenTests :: OptionSet -> TestTree -> [(TestName, Golden)]
+getGoldenTests :: OptionSet -> TestTree -> [(TestName, Golden, GoldenFileFormat)]
 getGoldenTests =
   foldTestTree
-    trivialFold { foldSingle = \_ name t -> fmap ((,) name) $ maybeToList $ cast t }
+    trivialFold {
+      foldSingle = \opts name t ->
+        case cast t of
+          Just t -> [(name, t, lookupOption opts)]
+          Nothing -> []
+    }
 
 -- | «Accept» a golden test, i.e. reset the golden value to the currently
 -- produced value
-acceptGoldenTest :: Golden -> IO ()
+acceptGoldenTest :: (?ff :: GoldenFileFormat) => Golden -> IO ()
 acceptGoldenTest (Golden _ getTested _ update) =
   vgRun $ liftIO . update =<< getTested
 
@@ -73,6 +78,6 @@ acceptGoldenTest (Golden _ getTested _ update) =
 acceptGoldenTests :: OptionSet -> TestTree -> IO ()
 acceptGoldenTests opts tests = do
   let gs = getGoldenTests opts tests
-  forM_ gs $ \(n,g) -> do
-    acceptGoldenTest g
+  forM_ gs $ \(n,g,ff) -> do
+    let ?ff = ff in acceptGoldenTest g
     printf "Accepted %s\n" n
