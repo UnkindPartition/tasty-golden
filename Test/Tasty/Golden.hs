@@ -15,6 +15,7 @@ module Test.Tasty.Golden
   , goldenVsString
   , goldenVsFileDiff
   , goldenVsStringDiff
+  , writeBinaryFile
   )
   where
 
@@ -154,3 +155,7 @@ goldenVsStringDiff name cmdf ref act =
       _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
 
   upd = LB.writeFile ref
+
+-- | Like 'writeFile', but uses binary mode
+writeBinaryFile :: FilePath -> String -> IO ()
+writeBinaryFile f txt = withBinaryFile f WriteMode (\hdl -> hPutStr hdl txt)
