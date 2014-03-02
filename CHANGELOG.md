@@ -1,6 +1,16 @@
 Changes
 =======
 
+Version 2.2.1
+-------------
+
+* Fix a bug where the result of the comparison function would reference yet
+  unread data from a semiclosed file and the file gets closed, leading to a
+  runtime exception
+* Export `writeBinaryFile`
+* Improve the docs
+* Update to work with `tasty-0.8`
+
 Version 2.2.0.2
 ---------------
 
