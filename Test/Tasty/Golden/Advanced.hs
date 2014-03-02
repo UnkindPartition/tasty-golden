@@ -1,8 +1,7 @@
-{-# LANGUAGE RankNTypes, ImplicitParams #-}
+{-# LANGUAGE RankNTypes #-}
 module Test.Tasty.Golden.Advanced
   ( -- * The main function
     goldenTest,
-    GoldenFileFormat(..),
 
     -- * ValueGetter monad
     ValueGetter(..),
@@ -16,8 +15,8 @@ import Test.Tasty.Golden.Internal
 -- | A very general testing function.
 goldenTest
   :: TestName -- ^ test name
-  -> ((?ff :: GoldenFileFormat) => forall r . ValueGetter r a) -- ^ get the golden correct value
-  -> ((?ff :: GoldenFileFormat) => forall r . ValueGetter r a) -- ^ get the tested value
+  -> (forall r . ValueGetter r a) -- ^ get the golden correct value
+  -> (forall r . ValueGetter r a) -- ^ get the tested value
   -> (a -> a -> IO (Maybe String))
     -- ^ comparison function.
     --
