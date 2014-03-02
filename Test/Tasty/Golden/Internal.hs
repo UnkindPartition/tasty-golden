@@ -10,7 +10,6 @@ import Data.Typeable (Typeable)
 import Data.ByteString.Lazy as LB
 import Data.Proxy
 import System.IO
-import Test.Tasty (localOption) -- for docs only
 import Test.Tasty.Providers
 import Test.Tasty.Options
 
@@ -79,19 +78,8 @@ runGolden ff (Golden getGolden getTested cmp _) =
       Nothing ->
         return $ testPassed ""
 
-{- | Specifies the file format of golden files.
-
-All @golden@ functions respect this option. Depending on its value, either
-'openFile' or 'openBinaryFile' will be used internally, which will affect
-line endings conversion on Windows.
-
-No such conversion is done for raw 'ByteString's in functions like
-'goldenVsString'. If you are reading such a string from a handle, you may
-need to set the appropriate mode for the handle yourself (see 'hSetBinaryMode').
-
-As with any other tasty option, you can set 'GoldenFileFormat' for the
-whole tree, any subtree or individual tests using 'localOption'.
--}
+-- | Specifies the file format of golden files. When text files are
+-- processed on Windows, automatic newline conversion is applied.
 data GoldenFileFormat = GoldenText | GoldenBinary
   deriving Typeable
 
