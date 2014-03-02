@@ -60,7 +60,7 @@ runGolden (Golden getGolden getTested cmp _) = do
       Just reason -> do
         -- Make sure that the result is fully evaluated and doesn't depend
         -- on yet un-read lazy input
-        liftIO $ evaluate $ reason `deepseq` ()
+        liftIO $ evaluate . rnf $ reason
         return $ testFailed reason
       Nothing ->
         return $ testPassed ""

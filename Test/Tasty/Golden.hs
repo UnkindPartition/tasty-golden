@@ -29,6 +29,7 @@ import System.Exit
 import System.FilePath
 import Control.Exception
 import Control.Monad
+import Control.DeepSeq
 
 -- trick to avoid an explicit dependency on transformers
 import Control.Monad.Error (liftIO)
@@ -102,7 +103,7 @@ goldenVsFileDiff name cmdf ref new act =
     (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContents sout
-    evaluate $ length out
+    evaluate . rnf $ out
 
     r <- waitForProcess pid
     return $ case r of
@@ -145,7 +146,7 @@ goldenVsStringDiff name cmdf ref act =
     (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContents sout
-    _ <- evaluate $ length out
+    evaluate . rnf $ out
 
     r <- waitForProcess pid
     return $ case r of
