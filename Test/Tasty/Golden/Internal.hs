@@ -46,7 +46,7 @@ vgRun :: ValueGetter r r -> IO r
 vgRun (ValueGetter a) = runContT a evaluate
 
 instance IsTest Golden where
-  run opts golden _ = runGolden golden
+  run _ golden _ = runGolden golden
   testOptions = return []
 
 runGolden :: Golden -> IO Result

@@ -21,6 +21,7 @@ import Test.Tasty.Golden.Internal
 import Data.Typeable
 import Data.Tagged
 import Data.Proxy
+import Data.Maybe
 import Control.Monad.Cont
 import Text.Printf
 import Options.Applicative
