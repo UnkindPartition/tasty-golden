@@ -1,5 +1,5 @@
 name:                tasty-golden
-version:             2.2.1
+version:             2.2.1.1
 synopsis:            Golden tests support for tasty
 description:
   This package provides support for «golden testing».
@@ -41,6 +41,6 @@ library
     mtl,
     optparse-applicative,
     filepath,
-    temporary >= 1.1,
+    temporary-rc,
     tagged,
     deepseq
