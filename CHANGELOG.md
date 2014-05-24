@@ -1,6 +1,16 @@
 Changes
 =======
 
+Version 2.2.1.2
+---------------
+
+Catch exceptions when accepting golden tests
+
+Version 2.2.1.1
+---------------
+
+Switch to `temporary-rc`
+
 Version 2.2.1
 -------------
 
