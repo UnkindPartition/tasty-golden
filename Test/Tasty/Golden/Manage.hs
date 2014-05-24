@@ -23,6 +23,7 @@ import Data.Tagged
 import Data.Proxy
 import Data.Maybe
 import Control.Monad.Cont
+import Control.Exception
 import Text.Printf
 import Options.Applicative
 
@@ -73,5 +74,8 @@ acceptGoldenTests :: OptionSet -> TestTree -> IO ()
 acceptGoldenTests opts tests = do
   let gs = getGoldenTests opts tests
   forM_ gs $ \(n,g) -> do
-    acceptGoldenTest g
-    printf "Accepted %s\n" n
+    mbExn <- try $ acceptGoldenTest g
+    case mbExn of
+      Right {} -> printf "Accepted %s\n" n
+      -- yeah, this is not async-exception-safe/correct
+      Left e -> printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
