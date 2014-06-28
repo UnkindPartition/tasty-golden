@@ -205,6 +205,9 @@ writeBinaryFile f txt = withBinaryFile f WriteMode (\hdl -> hPutStr hdl txt)
 -- even on Windows. Thus if the file name ends up in a golden file, it
 -- will not differ when run on another platform.
 --
+-- The semantics of extensions is the same as in 'takeExtension'. In
+-- particular, non-empty extensions should have the form @".ext"@.
+--
 -- This function may throw any exception that 'getDirectoryContents' may
 -- throw.
 --
