@@ -201,9 +201,9 @@ writeBinaryFile f txt = withBinaryFile f WriteMode (\hdl -> hPutStr hdl txt)
 -- It is typically used to find all test files and produce a golden test
 -- per test file.
 --
--- The returned paths are relative and use forward slashes to separate path
--- components, even on Windows. Thus if the file name ends up in a golden
--- file, it will not differ when run on another platform.
+-- The returned paths use forward slashes to separate path components,
+-- even on Windows. Thus if the file name ends up in a golden file, it
+-- will not differ when run on another platform.
 --
 -- This function may throw any exception that 'getDirectoryContents' may
 -- throw.
