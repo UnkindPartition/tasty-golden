@@ -48,6 +48,7 @@ module Test.Tasty.Golden
   , goldenVsFileDiff
   , goldenVsStringDiff
   , writeBinaryFile
+  , findByExtension
   )
   where
 
@@ -60,9 +61,11 @@ import System.IO.Temp
 import System.Process
 import System.Exit
 import System.FilePath
+import System.Directory
 import Control.Exception
 import Control.Monad
 import Control.DeepSeq
+import qualified Data.Set as Set
 
 -- trick to avoid an explicit dependency on transformers
 import Control.Monad.Error (liftIO)
@@ -191,3 +194,41 @@ goldenVsStringDiff name cmdf ref act =
 -- | Like 'writeFile', but uses binary mode
 writeBinaryFile :: FilePath -> String -> IO ()
 writeBinaryFile f txt = withBinaryFile f WriteMode (\hdl -> hPutStr hdl txt)
+
+-- | Find all files in the given directory and its subdirectories that have
+-- the given extensions.
+--
+-- It is typically used to find all test files and produce a golden test
+-- per test file.
+--
+-- The returned paths are relative and use forward slashes to separate path
+-- components, even on Windows. Thus if the file name ends up in a golden
+-- file, it will not differ when run on another platform.
+--
+-- This function may throw any exception that 'getDirectoryContents' may
+-- throw.
+--
+-- It doesn't do anything special to handle symlinks (in particular, it
+-- probably won't work on symlink loops).
+--
+-- Nor is it optimized to work with huge directory trees (you'd probably
+-- want to use some form of coroutines for that).
+findByExtension
+  :: [FilePath] -- ^ extensions
+  -> FilePath -- ^ directory
+  -> IO [FilePath] -- ^ paths
+findByExtension extsList = go where
+  exts = Set.fromList extsList
+  go dir = do
+    allEntries <- getDirectoryContents dir
+    let entries = filter (not . (`elem` [".", ".."])) allEntries
+    liftM concat $ forM entries $ \e -> do
+      let path = dir ++ "/" ++ e
+      isDir <- doesDirectoryExist path
+      if isDir
+        then go path
+        else
+          return $
+            if takeExtension path `Set.member` exts
+              then [path]
+              else []

@@ -43,4 +43,6 @@ library
     filepath,
     temporary-rc,
     tagged,
-    deepseq
+    deepseq,
+    containers,
+    directory
