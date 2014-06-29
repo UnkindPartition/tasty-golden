@@ -1,8 +1,13 @@
 Changes
 =======
 
+Version 2.2.2.2
+---------------
+
+Restore compatibility with older compilers
+
 Version 2.2.2.1
--------------
+---------------
 
 Relax `Cabal` dependency
 
