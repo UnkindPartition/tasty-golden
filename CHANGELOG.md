@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.2.2.1
+-------------
+
+Relax `Cabal` dependency
+
 Version 2.2.2
 -------------
 
