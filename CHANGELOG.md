@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.2.2
+-------------
+
+Add `findByExtension`
+
 Version 2.2.1.2
 ---------------
 
