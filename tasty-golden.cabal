@@ -47,7 +47,8 @@ library
     tagged,
     deepseq,
     containers,
-    directory
+    directory,
+    async
 
 Test-suite test
   Default-language:

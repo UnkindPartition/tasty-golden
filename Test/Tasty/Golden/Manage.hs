@@ -25,6 +25,7 @@ import Data.Maybe
 import Control.Monad.Cont
 import Control.Monad.State
 import Control.Exception
+import Control.Concurrent.Async
 import Text.Printf
 import Options.Applicative
 
@@ -74,10 +75,9 @@ acceptGoldenTests :: OptionSet -> TestTree -> IO Bool
 acceptGoldenTests opts tests = do
   let gs = getGoldenTests opts tests
   numExns <- flip execStateT (0 :: Int) $ forM_ gs $ \(n,g) -> do
-    mbExn <- liftIO $ try $ acceptGoldenTest g
+    mbExn <- liftIO $ withAsync (acceptGoldenTest g) waitCatch
     case mbExn of
       Right {} -> liftIO $ printf "Accepted %s\n" n
-      -- yeah, this is not async-exception-safe/correct
       Left e -> do
         liftIO $ printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
         ne <- get
