@@ -23,6 +23,7 @@ import Data.Tagged
 import Data.Proxy
 import Data.Maybe
 import Control.Monad.Cont
+import Control.Monad.State
 import Control.Exception
 import Text.Printf
 import Options.Applicative
@@ -53,9 +54,8 @@ acceptingTests = TestManager [Option (Proxy :: Proxy AcceptTests)] $
   \opts tree ->
     case lookupOption opts of
       AcceptTests False -> Nothing
-      AcceptTests True -> Just $ do
+      AcceptTests True -> Just $
         acceptGoldenTests opts tree
-        return True
 
 -- | Get the list of all golden tests in a given test tree
 getGoldenTests :: OptionSet -> TestTree -> [(TestName, Golden)]
@@ -70,12 +70,22 @@ acceptGoldenTest (Golden _ getTested _ update) =
   vgRun $ liftIO . update =<< getTested
 
 -- | Accept all golden tests in the test tree
-acceptGoldenTests :: OptionSet -> TestTree -> IO ()
+acceptGoldenTests :: OptionSet -> TestTree -> IO Bool
 acceptGoldenTests opts tests = do
   let gs = getGoldenTests opts tests
-  forM_ gs $ \(n,g) -> do
-    mbExn <- try $ acceptGoldenTest g
+  numExns <- flip execStateT (0 :: Int) $ forM_ gs $ \(n,g) -> do
+    mbExn <- liftIO $ try $ acceptGoldenTest g
     case mbExn of
-      Right {} -> printf "Accepted %s\n" n
+      Right {} -> liftIO $ printf "Accepted %s\n" n
       -- yeah, this is not async-exception-safe/correct
-      Left e -> printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
+      Left e -> do
+        liftIO $ printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
+        ne <- get
+        put $! ne+1
+
+  -- warn when there were problems
+  when (numExns > 0) $
+    printf "NOTE: %d tests threw exceptions!\n" numExns
+
+  -- is everything ok?
+  return (numExns == 0)
