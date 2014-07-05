@@ -1,6 +1,12 @@
 Changes
 =======
 
+Version 2.2.2.4
+---------------
+
+* Warn when some tests threw exceptions during `--accept`
+* Properly handle exceptions; don't swallow Ctrl-C
+
 Version 2.2.2.3
 ---------------
 
