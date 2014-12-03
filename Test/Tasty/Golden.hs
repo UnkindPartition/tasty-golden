@@ -43,11 +43,10 @@ as binary does the job.
 -}
 
 module Test.Tasty.Golden
-  ( goldenVsFile
-  , goldenVsString
-  , goldenVsFileDiff
-  , goldenVsStringDiff
-  , writeBinaryFile
+  (-- goldenVsFile
+--  , goldenVsString
+--  , goldenVsStringDiff
+   writeBinaryFile
   , findByExtension
   )
   where
@@ -66,10 +65,14 @@ import Control.Exception
 import Control.Monad
 import Control.DeepSeq
 import qualified Data.Set as Set
+import Data.Maybe
+import Control.Applicative
+import qualified Data.Text as T
 
 -- trick to avoid an explicit dependency on transformers
 import Control.Monad.Error (liftIO)
 
+{-
 -- | Compare a given file contents against the golden file contents
 goldenVsFile
   :: TestName -- ^ test name
@@ -81,9 +84,10 @@ goldenVsFile name ref new act =
   goldenTest
     name
     (vgReadFile ref)
-    (liftIO act >> vgReadFile new)
+    (liftIO act >> (fromJust <$> vgReadFile new))
     cmp
     upd
+    (return . T.pack . show)
   where
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = LB.writeFile ref
@@ -101,52 +105,17 @@ goldenVsString name ref act =
     (liftIO act)
     cmp
     upd
+    (return . T.pack . show)
   where
   cmp x y = simpleCmp msg x y
     where
     msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
   upd = LB.writeFile ref
 
-simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
+simpleCmp :: Eq a => String -> a -> a -> IO (Maybe T.Text)
 simpleCmp e x y =
-  return $ if x == y then Nothing else Just e
+  return $ if x == y then Nothing else Just (T.pack e)
 
--- | Same as 'goldenVsFile', but invokes an external diff command.
-goldenVsFileDiff
-  :: TestName -- ^ test name
-  -> (FilePath -> FilePath -> [String])
-    -- ^ function that constructs the command line to invoke the diff
-    -- command.
-    --
-    -- E.g.
-    --
-    -- >\ref new -> ["diff", "-u", ref, new]
-  -> FilePath -- ^ path to the golden file
-  -> FilePath -- ^ path to the output file
-  -> IO ()    -- ^ action that produces the output file
-  -> TestTree
-goldenVsFileDiff name cmdf ref new act =
-  goldenTest
-    name
-    (return ())
-    (liftIO act)
-    cmp
-    upd
-  where
-  cmd = cmdf ref new
-  cmp _ _ | null cmd = error "goldenVsFileDiff: empty command line"
-  cmp _ _ = do
-    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
-    -- strictly read the whole output, so that the process can terminate
-    out <- hGetContents sout
-    evaluate . rnf $ out
-
-    r <- waitForProcess pid
-    return $ case r of
-      ExitSuccess -> Nothing
-      _ -> Just out
-
-  upd _ = LB.readFile new >>= LB.writeFile ref
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 goldenVsStringDiff
@@ -168,6 +137,7 @@ goldenVsStringDiff name cmdf ref act =
     (liftIO act)
     cmp
     upd
+    (return . T.pack . show)
   where
   template = takeFileName ref <.> "actual"
   cmp _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
@@ -187,9 +157,10 @@ goldenVsStringDiff name cmdf ref act =
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
+      _ -> Just $ T.pack (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
 
   upd = LB.writeFile ref
+-}
 
 -- | Like 'writeFile', but uses binary mode
 writeBinaryFile :: FilePath -> String -> IO ()
