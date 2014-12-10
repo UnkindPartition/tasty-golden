@@ -30,6 +30,7 @@ library
   exposed-modules:     Test.Tasty.Golden
                        Test.Tasty.Golden.Advanced
                        Test.Tasty.Golden.Manage
+                       Test.Tasty.Golden.Simple
   other-modules:
                        Test.Tasty.Golden.Internal
 
