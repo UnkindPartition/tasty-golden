@@ -1,11 +1,14 @@
 {-# LANGUAGE RankNTypes #-}
 module Test.Tasty.Golden.Advanced
   ( -- * The main function
-    goldenTest,
+    goldenTest
 
-    -- * ValueGetter monad
-    ValueGetter(..),
-    vgReadFile
+  , GShow (..)
+  , GDiff (..)
+
+  -- * ValueGetter monad
+  , ValueGetter(..)
+  , vgReadFile
   )
 where
 
@@ -14,10 +17,11 @@ import Test.Tasty.Golden.Internal
 
 -- | A very general testing function.
 goldenTest
-  :: TestName -- ^ test name
-  -> (forall r . ValueGetter r a) -- ^ get the golden correct value
+  :: Eq a
+  => TestName -- ^ test name
+  -> (forall r . ValueGetter r (Maybe a)) -- ^ get the golden correct value
   -> (forall r . ValueGetter r a) -- ^ get the tested value
-  -> (a -> a -> IO (Maybe String))
+  -> (a -> a -> GDiff)
     -- ^ comparison function.
     --
     -- If two values are the same, it should return 'Nothing'. If they are
@@ -26,6 +30,9 @@ goldenTest
     --
     -- The function may use 'IO', for example, to launch an external @diff@
     -- command.
+  -> (a -> GShow) -- ^ Show the golden/actual value.
   -> (a -> IO ()) -- ^ update the golden file
   -> TestTree
-goldenTest t golden test cmp upd = singleTest t $ Golden golden test cmp upd
+goldenTest t golden test diff shw upd = singleTest t $ Golden golden test diff shw upd
+
+

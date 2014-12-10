@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverloadedStrings #-}
 {- |
 This module provides a simplified interface. If you want more, see
 "Test.Tasty.Golden.Advanced".
@@ -44,33 +45,39 @@ as binary does the job.
 
 module Test.Tasty.Golden
   ( goldenVsFile
-  , goldenVsString
-  , goldenVsFileDiff
-  , goldenVsStringDiff
+  , goldenVsProg
+  , goldenVsAction
   , writeBinaryFile
   , findByExtension
+
+  , GoldenTextLike (..)
+  , ProgramResult
+  , runParseGT
   )
   where
 
 import Test.Tasty.Providers
 import Test.Tasty.Golden.Advanced
-import Text.Printf
-import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as BS
+import Data.Attoparsec.Text
 import System.IO
-import System.IO.Temp
-import System.Process
 import System.Exit
 import System.FilePath
 import System.Directory
-import Control.Exception
 import Control.Monad
-import Control.DeepSeq
 import qualified Data.Set as Set
+import Data.Maybe
+import Control.Applicative
+import qualified Data.Text as T
+import System.Process.Text as PT
 
 -- trick to avoid an explicit dependency on transformers
 import Control.Monad.Error (liftIO)
+import Data.Text.Encoding
 
--- | Compare a given file contents against the golden file contents
+
+-- | Compare a given file contents against the golden file contents. Assumes that the text file is utf8 encoded.
 goldenVsFile
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
@@ -81,115 +88,45 @@ goldenVsFile name ref new act =
   goldenTest
     name
     (vgReadFile ref)
-    (liftIO act >> vgReadFile new)
-    cmp
+    (liftIO act >> (fromJust <$> vgReadFile new))
+    textLikeDiff
+    textLikeShow
     upd
-  where
-  cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
-  upd = LB.writeFile ref
+  where upd = BL.writeFile ref
+
+goldenVsProg
+  :: TestName
+  -> FilePath   -- ^ path to the golden file
+  -> FilePath   -- ^ executable to run.
+  -> [String]   -- ^ arguments to pass.
+  -> T.Text       -- ^ stdin
+  -> TestTree
+goldenVsProg name ref cmd args inp =
+  goldenVsAction name ref runProg
+  where runProg = PT.readProcessWithExitCode cmd args inp
 
 -- | Compare a given string against the golden file contents
-goldenVsString
-  :: TestName -- ^ test name
+goldenVsAction
+  :: GoldenTextLike a
+  => TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
-  -> IO LB.ByteString -- ^ action that returns a string
+  -> IO a -- ^ action that returns a string
   -> TestTree -- ^ the test verifies that the returned string is the same as the golden file contents
-goldenVsString name ref act =
+goldenVsAction name ref act =
   goldenTest
     name
-    (vgReadFile ref)
+    (maybe Nothing (Just . runParseGT . decodeUtf8 . BL.toStrict) <$> vgReadFile ref)
     (liftIO act)
-    cmp
-    upd
-  where
-  cmp x y = simpleCmp msg x y
-    where
-    msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
-  upd = LB.writeFile ref
+    textLikeDiff
+    textLikeShow
+    (upd . BL.fromStrict . encodeUtf8 . printGT)
+  where upd = BL.writeFile ref
 
-simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
-simpleCmp e x y =
-  return $ if x == y then Nothing else Just e
+textLikeShow :: GoldenTextLike a => a -> GShow
+textLikeShow = ShowText . printGT
 
--- | Same as 'goldenVsFile', but invokes an external diff command.
-goldenVsFileDiff
-  :: TestName -- ^ test name
-  -> (FilePath -> FilePath -> [String])
-    -- ^ function that constructs the command line to invoke the diff
-    -- command.
-    --
-    -- E.g.
-    --
-    -- >\ref new -> ["diff", "-u", ref, new]
-  -> FilePath -- ^ path to the golden file
-  -> FilePath -- ^ path to the output file
-  -> IO ()    -- ^ action that produces the output file
-  -> TestTree
-goldenVsFileDiff name cmdf ref new act =
-  goldenTest
-    name
-    (return ())
-    (liftIO act)
-    cmp
-    upd
-  where
-  cmd = cmdf ref new
-  cmp _ _ | null cmd = error "goldenVsFileDiff: empty command line"
-  cmp _ _ = do
-    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
-    -- strictly read the whole output, so that the process can terminate
-    out <- hGetContents sout
-    evaluate . rnf $ out
-
-    r <- waitForProcess pid
-    return $ case r of
-      ExitSuccess -> Nothing
-      _ -> Just out
-
-  upd _ = LB.readFile new >>= LB.writeFile ref
-
--- | Same as 'goldenVsString', but invokes an external diff command.
-goldenVsStringDiff
-  :: TestName -- ^ test name
-  -> (FilePath -> FilePath -> [String])
-    -- ^ function that constructs the command line to invoke the diff
-    -- command.
-    --
-    -- E.g.
-    --
-    -- >\ref new -> ["diff", "-u", ref, new]
-  -> FilePath -- ^ path to the golden file
-  -> IO LB.ByteString -- ^ action that returns a string
-  -> TestTree
-goldenVsStringDiff name cmdf ref act =
-  goldenTest
-    name
-    (vgReadFile ref)
-    (liftIO act)
-    cmp
-    upd
-  where
-  template = takeFileName ref <.> "actual"
-  cmp _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
-
-    -- Write act output to temporary ("new") file
-    LB.hPut tmpHandle actBS >> hFlush tmpHandle
-
-    let cmd = cmdf ref tmpFile
-
-    when (null cmd) $ error "goldenVsFileDiff: empty command line"
-
-    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
-    -- strictly read the whole output, so that the process can terminate
-    out <- hGetContents sout
-    evaluate . rnf $ out
-
-    r <- waitForProcess pid
-    return $ case r of
-      ExitSuccess -> Nothing
-      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
-
-  upd = LB.writeFile ref
+textLikeDiff :: GoldenTextLike a => a -> a -> GDiff
+textLikeDiff x y = DiffText (printGT x) (printGT y)
 
 -- | Like 'writeFile', but uses binary mode
 writeBinaryFile :: FilePath -> String -> IO ()
@@ -235,3 +172,56 @@ findByExtension extsList = go where
             if takeExtension path `Set.member` exts
               then [path]
               else []
+
+
+type ProgramResult bs = (ExitCode, bs, bs)
+
+runParseGT :: GoldenTextLike a => T.Text -> a
+runParseGT t = case r of
+    Left msg -> error $ "ParseGT failed: " ++ msg
+    Right x -> x
+  where r = parseOnly (parseGT <* endOfInput) t
+
+class Eq a => GoldenTextLike a where
+  printGT :: a -> T.Text
+  parseGT :: Parser a
+
+instance GoldenTextLike T.Text where
+  printGT = id
+  parseGT = takeText
+
+instance GoldenTextLike (ProgramResult T.Text) where
+  printGT = printProgRes id
+  parseGT = parseProgRes id
+
+
+-- first line is exit code, then out block, then err block
+printProgRes :: (bs -> T.Text) ->  ProgramResult bs -> T.Text
+printProgRes dec (ex, a, b) = T.unlines (["ret > " `T.append` T.pack (show ex)]
+                            ++ addPref "out" (dec a) ++ addPref "err" (dec b))
+    where addPref pref t = let body = case T.lines t of
+                                    [] -> []
+                                    (x:xs) -> ((pref `T.append` " > " `T.append` x):(map (T.append "    > ") xs))
+                               nlFix = if "\n" `T.isSuffixOf` t then ["    > "] else [] -- avoid trailing \n to get lost
+                            in body ++ nlFix
+
+parseProgRes :: (T.Text -> bs) -> Parser (ProgramResult bs)
+parseProgRes enc = (\a b c -> (read $ T.unpack a, b, c))
+        <$ string "ret > " <*> takeTill (=='\n') <* char '\n' <*> pStdstr "out" <*> pStdstr "err"
+
+    where pStdstr pref = ((\x xs -> enc $ T.intercalate "\n" (x:xs)) <$> pLine pref <*> many (pLine "   "))
+                    <|> (enc <$> pure T.empty)
+          pLine :: T.Text -> Parser T.Text
+          pLine pref = string pref *> string " > " *> takeTill (=='\n') <* char '\n'
+
+-- | Assumes that the bytestring is utf8 encoded.
+instance GoldenTextLike BS.ByteString where
+  printGT = decodeUtf8
+  parseGT = encodeUtf8 <$> takeText
+
+-- | Assumes that the bytestring is utf8 encoded.
+instance GoldenTextLike BL.ByteString where
+  printGT = decodeUtf8 . BL.toStrict
+  parseGT = BL.fromStrict . encodeUtf8 <$> takeText
+
+
