@@ -67,7 +67,7 @@ getGoldenTests =
 -- | «Accept» a golden test, i.e. reset the golden value to the currently
 -- produced value
 acceptGoldenTest :: Golden -> IO ()
-acceptGoldenTest (Golden _ getTested _ update) =
+acceptGoldenTest (Golden _ getTested _  _ update) =
   vgRun $ liftIO . update =<< getTested
 
 -- | Accept all golden tests in the test tree
@@ -79,7 +79,7 @@ acceptGoldenTests opts tests = do
     case mbExn of
       Right {} -> liftIO $ printf "Accepted %s\n" n
       Left e -> do
-        liftIO $ printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
+        _ <- liftIO $ printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
         ne <- get
         put $! ne+1
 
@@ -89,3 +89,4 @@ acceptGoldenTests opts tests = do
 
   -- is everything ok?
   return (numExns == 0)
+
