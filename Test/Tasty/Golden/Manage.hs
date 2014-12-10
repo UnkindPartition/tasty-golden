@@ -37,7 +37,6 @@ import qualified Data.ByteString as BS
 import System.IO
 import System.IO.Temp
 import System.FilePath
-import Control.Concurrent
 
 -- | Like @defaultMain@ from the main tasty package, but also includes the
 -- golden test management capabilities.
@@ -112,7 +111,7 @@ acceptGoldenTests opts tests = do
     case mbExn of
       Right {} -> liftIO $ printf "Accepted %s\n" n
       Left e -> do
-        liftIO $ printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
+        _ <- liftIO $ printf "Error when trying to accept %s: %s\n" n (show (e :: SomeException))
         ne <- get
         put $! ne+1
 
@@ -121,8 +120,6 @@ acceptGoldenTests opts tests = do
     printf "NOTE: %d tests threw exceptions!\n" numExns
   -- is everything ok?
   return (numExns == 0)
-
-type InteractiveState = StateT (Int, Int) IO
 
 runTestsInteractive :: OptionSet -> TestTree -> IO Bool
 runTestsInteractive opts tests = do
@@ -134,7 +131,7 @@ runTestsInteractive opts tests = do
 
   -- warn when there were problems
   when (nFail > 0 || nReject > 0) (do
-    printf "NOTE: %d tests threw exceptions!\n" nFail
+    _ <- printf "NOTE: %d tests threw exceptions!\n" nFail
     printf "NOTE: %d tests were rejected!\n" nReject
     )
 
@@ -152,39 +149,29 @@ runTestsInteractive opts tests = do
 
               -- read golden
               liftIO $ putStrLn "Getting golden"
-              exp <- getGolden
-              case exp of
+              golden <- getGolden
+              case golden of
                 Nothing -> do
-                  liftIO $ printf "%s: No golden value. Press <enter> to see actual value.\n" n
+                  _ <- liftIO $ printf "%s: No golden value. Press <enter> to see actual value.\n" n
                   _ <- liftIO getLine
-                  liftIO $ showValue n $ shw tested
+                  _ <- liftIO $ showValue n $ shw tested
                   liftIO $ tryAccept n upd tested
-                Just exp'' -> do
-                  case exp'' == tested of
+                Just golden' -> do
+                  case golden' == tested of
                     True -> do
-                      liftIO $ printf "%s: Golden value matches output.\n" n
+                      _ <- liftIO $ printf "%s: Golden value matches output.\n" n
                       return (0, 0, return ())
                     False -> do
-                      liftIO $ printf "%s: Output does not match golden value. Press <enter> to see diff.\n" n
+                      _ <- liftIO $ printf "%s: Output does not match golden value. Press <enter> to see diff.\n" n
                       _ <- liftIO getLine
-                      liftIO $ showDiff n (diff exp'' tested)
+                      _ <- liftIO $ showDiff n (diff golden' tested)
                       liftIO $ tryAccept n upd tested
             liftIO act
-            modify (\(fail, reject) -> (fail + pFail, reject + pReject))
+            modify (\(nFail, nReject) -> (nFail + pFail, nReject + pReject))
 
-	inspectOrFail :: String -> TestName -> Either SomeException b
-            -> (b -> (ValueGetter r (Integer, Integer, IO ()))) -> ValueGetter r (Integer, Integer, IO ())
-	inspectOrFail msg n r f = case r of
-                Left e -> do
-                    liftIO $ printf msg n (show (e :: SomeException))
---                    modify (\(fail,reject) -> (fail + 1, reject))
-                    return (1, 0, return ())
-                Right x -> f x
-
---        reject = modify (\(fail, reject) -> (fail, reject + 1))
         tryAccept :: TestName -> (a -> IO ()) -> a -> IO (Integer, Integer, IO ())
         tryAccept n upd new = do
-            printf "%s: Accept actual value as new golden value? [yn]" n
+            _ <- printf "%s: Accept actual value as new golden value? [yn]" n
             
             ans <- getLine
             case ans of
@@ -214,9 +201,9 @@ showValue :: TestName -> GShow -> IO ()
 showValue n (ShowText t) = showInLess n t
 
 showInLess :: String -> T.Text -> IO ()
-showInLess name t = do
+showInLess _ t = do
   -- TODO error handling...
-  PL.readProcessWithExitCode "sh" ["-c", "less > /dev/tty"] inp
+  _ <- PL.readProcessWithExitCode "sh" ["-c", "less > /dev/tty"] inp
   return ()
   where inp = B.fromStrict $ encodeUtf8 t
                 

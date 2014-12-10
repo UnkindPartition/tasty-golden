@@ -1,20 +1,19 @@
 {-# LANGUAGE RankNTypes #-}
 module Test.Tasty.Golden.Advanced
   ( -- * The main function
-    goldenTest,
+    goldenTest
 
-    GShow (..),
-    GDiff (..),
+  , GShow (..)
+  , GDiff (..)
 
-    -- * ValueGetter monad
-    ValueGetter(..),
-    vgReadFile
+  -- * ValueGetter monad
+  , ValueGetter(..)
+  , vgReadFile
   )
 where
 
 import Test.Tasty.Providers
 import Test.Tasty.Golden.Internal
-import qualified Data.Text as T
 
 -- | A very general testing function.
 goldenTest
@@ -35,3 +34,5 @@ goldenTest
   -> (a -> IO ()) -- ^ update the golden file
   -> TestTree
 goldenTest t golden test diff shw upd = singleTest t $ Golden golden test diff shw upd
+
+

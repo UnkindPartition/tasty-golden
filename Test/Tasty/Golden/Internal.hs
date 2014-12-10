@@ -11,7 +11,6 @@ import System.IO
 import System.IO.Error
 import Test.Tasty.Providers
 import qualified Data.Text as T
-import Control.DeepSeq
 
 -- | See 'goldenTest' for explanation of the fields
 data Golden =
