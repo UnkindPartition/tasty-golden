@@ -11,6 +11,7 @@ import System.IO
 import System.IO.Error
 import Test.Tasty.Providers
 import qualified Data.Text as T
+import Data.Maybe
 
 -- | See 'goldenTest1' for explanation of the fields
 data Golden =
@@ -33,22 +34,31 @@ newtype ValueGetter r a = ValueGetter
 -- | Lazily read a file. The file handle will be closed after the
 -- 'ValueGetter' action is run.
 vgReadFile :: FilePath -> ValueGetter r ByteString
-vgReadFile path = maybe err id <$> vgReadFileMaybe path
-  where err = error $ "File " ++ path ++ " does not exist."
+vgReadFile path = fromJust <$> vgReadFile1 predFalse path
+  where predFalse :: IOException -> Bool
+        predFalse _ = False
 
 -- | Lazily read a file. The file handle will be closed after the
 -- 'ValueGetter' action is run.
 -- Will return 'Nothing' if the file does not exist.
 vgReadFileMaybe :: FilePath -> ValueGetter r (Maybe ByteString)
-vgReadFileMaybe path = do
-  r <- ((maybe (return Nothing) (\h -> liftIO $ (Just <$> LB.hGetContents h))) =<<) $
-    ValueGetter $
+vgReadFileMaybe = vgReadFile1 (isDoesNotExistErrorType . ioeGetErrorType)
+
+
+-- | Reads a file, and optionally catches some exceptions. If
+-- an exception is catched, Nothing is returned.
+vgReadFile1 :: Exception e
+    => (e -> Bool)  -- ^ Which exceptions to catch.
+    -> FilePath
+    -> ValueGetter r (Maybe ByteString)
+vgReadFile1 doCatch path = do
+  r <- ValueGetter $
     ContT $ \k ->
-    catchJust (\e -> if isDoesNotExistErrorType (ioeGetErrorType e) then Just () else Nothing)
+    catchJust (\e -> if doCatch e then Just () else Nothing)
       (bracket
         (openBinaryFile path ReadMode)
         hClose
-        (\h -> k (Just h))
+        (\h -> LB.hGetContents h >>= (k . Just))
       )
       (const $ k Nothing)
   return $! r
