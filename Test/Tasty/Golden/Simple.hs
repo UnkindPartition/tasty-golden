@@ -47,8 +47,7 @@ module Test.Tasty.Golden.Simple
   , goldenVsProg
   , goldenVsAction
 
-  , GoldenTextLike (..)
-  , ProgramResult
+  , printProcResult
   )
   where
 
@@ -93,22 +92,24 @@ goldenVsProg
   -> T.Text     -- ^ stdin
   -> TestTree
 goldenVsProg name ref cmd args inp =
-  goldenVsAction name ref runProg
+  goldenVsAction name ref runProg printProcResult
   where runProg = PT.readProcessWithExitCode cmd args inp
 
 -- | Compare something text-like against the golden file contents.
+-- For the conversion of inputs to text you may want to use the Data.Text.Encoding
+-- or/and System.Process.Text modules.
 goldenVsAction
-  :: GoldenTextLike a
-  => TestName -- ^ test name
+  :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
   -> IO a -- ^ action that returns a text-like value.
-  -> TestTree -- ^ the test verifies that the returned textual representation (see 'GoldenTextLike')
+  -> (a -> T.Text) -- ^ Converts a value to it's textual representation.
+  -> TestTree -- ^ the test verifies that the returned textual representation
               --   is the same as the golden file contents
-goldenVsAction name ref act =
+goldenVsAction name ref act toTxt =
   goldenTest1
     name
     (maybe Nothing (Just . decodeUtf8 . BL.toStrict) <$> vgReadFileMaybe ref)
-    (liftIO (printGT <$> act))
+    (liftIO (toTxt <$> act))
     textLikeDiff
     textLikeShow
     (upd . BL.fromStrict . encodeUtf8)
@@ -121,37 +122,17 @@ textLikeDiff :: T.Text -> T.Text -> GDiff
 textLikeDiff x y | x == y    = Equal
 textLikeDiff x y | otherwise =  DiffText x y
 
--- | The result of running a program.
-type ProgramResult bs = (ExitCode, bs, bs)
 
-
--- | How a value can be converted to a textual representation.
-class GoldenTextLike a where
-  printGT :: a -> T.Text
-
-instance GoldenTextLike T.Text where
-  printGT = id
-
-instance GoldenTextLike (ProgramResult T.Text) where
-  printGT = printProgRes id
-
-
+-- | Converts the output of a process produced by e.g. System.Process.Text to a textual representation.
+-- Stdout/stderr are written seperately, any ordering relation between the two streams
+-- is lost in the translation.
+printProcResult :: (ExitCode, T.Text, T.Text) -> T.Text
 -- first line is exit code, then out block, then err block
-printProgRes :: (bs -> T.Text) ->  ProgramResult bs -> T.Text
-printProgRes dec (ex, a, b) = T.unlines (["ret > " `T.append` T.pack (show ex)]
-                            ++ addPref "out" (dec a) ++ addPref "err" (dec b))
-    where addPref pref t = let body = case T.lines t of
+printProcResult (ex, a, b) = T.unlines (["ret > " `T.append` T.pack (show ex)]
+                            ++ addPrefix "out" a ++ addPrefix "err" b)
+    where addPrefix pref t = let body = case T.lines t of
                                     [] -> []
                                     (x:xs) -> ((pref `T.append` " > " `T.append` x):(map (T.append "    > ") xs))
-                               nlFix = if "\n" `T.isSuffixOf` t then ["    > "] else [] -- avoid trailing \n to get lost
-                            in body ++ nlFix
-
--- | Assumes that the bytestring is utf8 encoded.
-instance GoldenTextLike BS.ByteString where
-  printGT = decodeUtf8
-
--- | Assumes that the bytestring is utf8 encoded.
-instance GoldenTextLike BL.ByteString where
-  printGT = decodeUtf8 . BL.toStrict
-
+                                 nlFix = if "\n" `T.isSuffixOf` t then ["    > "] else [] -- avoid trailing \n to get lost
+                              in body ++ nlFix
 
