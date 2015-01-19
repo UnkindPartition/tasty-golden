@@ -19,8 +19,8 @@ data Golden =
     Golden
         (forall r . ValueGetter r (Maybe a))    -- Get golden value.
         (forall r . ValueGetter r a)            -- Get actual value.
-        (a -> a -> GDiff)                       -- Compare/diff.
-        (a -> GShow)                            -- How to produce a show.
+        (a -> a -> IO GDiff)                       -- Compare/diff.
+        (a -> IO GShow)                            -- How to produce a show.
         (a -> IO ())                            -- Update golden value.
   deriving Typeable
 
@@ -91,6 +91,7 @@ runGolden (Golden getGolden getActual cmp _ _) = do
       Nothing -> return $ testFailed "Missing golden value."
       Just ref -> do
         -- Output could be arbitrarily big, so don't even try to say what wen't wrong.
-        case ref `cmp` new of
+        cmp' <- liftIO $ cmp ref new
+        case cmp' of
           Equal -> return $ testPassed ""
           _     -> return $ testFailed "Result did not match expected output. Use interactive mode to see the full output."

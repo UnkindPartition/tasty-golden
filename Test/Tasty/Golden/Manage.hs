@@ -155,10 +155,11 @@ runTestsInteractive opts tests = do
                 Nothing -> do
                   _ <- liftIO $ printf "%s: No golden value. Press <enter> to see actual value.\n" n
                   _ <- liftIO getLine
-                  _ <- liftIO $ showValue n $ shw tested
+                  _ <- liftIO $ shw tested >>= showValue n
                   liftIO $ tryAccept n upd tested
                 Just golden' -> do
-                  case golden' `cmp` tested of
+                  cmp' <- liftIO $ cmp golden' tested
+                  case cmp' of
                     Equal -> do
                       _ <- liftIO $ printf "%s: Golden value matches output.\n" n
                       return (0, 0, return ())
