@@ -129,10 +129,10 @@ textLikeDiff x y | otherwise =  DiffText x y
 printProcResult :: (ExitCode, T.Text, T.Text) -> T.Text
 -- first line is exit code, then out block, then err block
 printProcResult (ex, a, b) = T.unlines (["ret > " `T.append` T.pack (show ex)]
-                            ++ addPrefix "out" a ++ addPrefix "err" b)
-    where addPrefix pref t = let body = case T.lines t of
-                                    [] -> []
-                                    (x:xs) -> ((pref `T.append` " > " `T.append` x):(map (T.append "    > ") xs))
-                                 nlFix = if "\n" `T.isSuffixOf` t then ["    > "] else [] -- avoid trailing \n to get lost
-                              in body ++ nlFix
-
+                            ++ addPrefix "out >" a ++ addPrefix "err >" b)
+    where addPrefix _    t | T.null t  = []
+          addPrefix pref t | otherwise = map (f pref) (T.splitOn "\n" t)
+          -- don't add trailing whitespace if line is empty. git diff will mark trailing whitespace
+          -- as error, which looks distracting.
+          f pref ln | T.null ln = pref
+          f pref ln | otherwise = pref `T.append` " " `T.append` ln
