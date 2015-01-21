@@ -115,12 +115,12 @@ goldenVsAction name ref act toTxt =
     (upd . BL.fromStrict . encodeUtf8)
   where upd = BL.writeFile ref
 
-textLikeShow :: T.Text -> GShow
-textLikeShow = ShowText
+textLikeShow :: T.Text -> IO GShow
+textLikeShow = return . ShowText
 
-textLikeDiff :: T.Text -> T.Text -> GDiff
-textLikeDiff x y | x == y    = Equal
-textLikeDiff x y | otherwise =  DiffText x y
+textLikeDiff :: T.Text -> T.Text -> IO GDiff
+textLikeDiff x y | x == y    = return Equal
+textLikeDiff x y | otherwise = return $ DiffText x y
 
 
 -- | Converts the output of a process produced by e.g. System.Process.Text to a textual representation.

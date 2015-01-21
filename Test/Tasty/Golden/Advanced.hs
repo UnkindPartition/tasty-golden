@@ -3,7 +3,6 @@ module Test.Tasty.Golden.Advanced
   ( -- * The main function
     goldenTest1,
 
-    goldenTestIO,
     goldenTest,
 
     GShow (..),
@@ -37,7 +36,7 @@ goldenTest
     -- command.
   -> (a -> IO ()) -- ^ update the golden file
   -> TestTree
-goldenTest t golden test cmp upd = goldenTestIO t (Just <$> golden) test runCmp shw upd
+goldenTest t golden test cmp upd = goldenTest1 t (Just <$> golden) test runCmp shw upd
   where  -- the diff should behave in a pure way, so let's just use unsafePerformIO
         runCmp a b = do
             cmp' <- cmp a b
@@ -52,24 +51,6 @@ goldenTest1
   :: TestName -- ^ test name
   -> (forall r . ValueGetter r (Maybe a)) -- ^ get the golden correct value
   -> (forall r . ValueGetter r a) -- ^ get the tested value
-  -> (a -> a -> GDiff)
-    -- ^ comparison function.
-    --
-    -- If two values are the same, it should return 'Equal'. If they are
-    -- different, it should return a diff representation.
-    -- First argument is golden value.
-  -> (a -> GShow) -- ^ Show the golden/actual value.
-  -> (a -> IO ()) -- ^ update the golden file
-  -> TestTree
-goldenTest1 t golden test diff shw upd = goldenTestIO t golden test (\a b -> return $ diff a b) (return . shw) upd
-
--- | A very general testing function.
--- The IO version of show/diff are useful when using external diff or show mechanisms. If IO is not required,
--- the `goldenTest1` function should be used instead.
-goldenTestIO
-  :: TestName -- ^ test name
-  -> (forall r . ValueGetter r (Maybe a)) -- ^ get the golden correct value
-  -> (forall r . ValueGetter r a) -- ^ get the tested value
   -> (a -> a -> IO GDiff)
     -- ^ comparison function.
     --
@@ -79,4 +60,4 @@ goldenTestIO
   -> (a -> IO GShow) -- ^ Show the golden/actual value.
   -> (a -> IO ()) -- ^ update the golden file
   -> TestTree
-goldenTestIO t golden test diff shw upd = singleTest t $ Golden golden test diff shw upd
+goldenTest1 t golden test diff shw upd = singleTest t $ Golden golden test diff shw upd
