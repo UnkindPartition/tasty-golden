@@ -11,7 +11,14 @@ import Test.Tasty.Golden.Internal
 -- | A very general testing function.
 goldenTest
   :: TestName -- ^ test name
-  -> (IO a) -- ^ get the golden correct value
+  -> (IO a)
+    -- ^ get the golden correct value
+    --
+    -- Note that this action may be followed by the update function call.
+    --
+    -- Therefore, this action *should avoid* reading the file lazily;
+    -- otherwise, the file may remain half-open and the update action will
+    -- fail.
   -> (IO a) -- ^ get the tested value
   -> (a -> a -> IO (Maybe String))
     -- ^ comparison function.
@@ -22,6 +29,7 @@ goldenTest
     --
     -- The function may use 'IO', for example, to launch an external @diff@
     -- command.
-  -> (a -> IO ()) -- ^ update the golden file
+  -> (a -> IO ())
+    -- ^ update the golden file
   -> TestTree
 goldenTest t golden test cmp upd = singleTest t $ Golden golden test cmp upd

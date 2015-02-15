@@ -55,7 +55,8 @@ module Test.Tasty.Golden
 import Test.Tasty.Providers
 import Test.Tasty.Golden.Advanced
 import Text.Printf
-import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import System.IO
 import System.IO.Temp
 import System.Process
@@ -64,6 +65,7 @@ import System.FilePath
 import System.Directory
 import Control.Exception
 import Control.Monad
+import Control.Applicative
 import Control.DeepSeq
 import qualified Data.Set as Set
 
@@ -77,32 +79,32 @@ goldenVsFile
 goldenVsFile name ref new act =
   goldenTest
     name
-    (LB.readFile ref)
-    (act >> LB.readFile new)
+    (BS.readFile ref)
+    (act >> BS.readFile new)
     cmp
     upd
   where
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
-  upd = LB.writeFile ref
+  upd = BS.writeFile ref
 
 -- | Compare a given string against the golden file contents
 goldenVsString
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
-  -> IO LB.ByteString -- ^ action that returns a string
+  -> IO LBS.ByteString -- ^ action that returns a string
   -> TestTree -- ^ the test verifies that the returned string is the same as the golden file contents
 goldenVsString name ref act =
   goldenTest
     name
-    (LB.readFile ref)
-    act
+    (BS.readFile ref)
+    (LBS.toStrict <$> act)
     cmp
     upd
   where
   cmp x y = simpleCmp msg x y
     where
     msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
-  upd = LB.writeFile ref
+  upd = BS.writeFile ref
 
 simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
 simpleCmp e x y =
@@ -143,7 +145,7 @@ goldenVsFileDiff name cmdf ref new act =
       ExitSuccess -> Nothing
       _ -> Just out
 
-  upd _ = LB.readFile new >>= LB.writeFile ref
+  upd _ = BS.readFile new >>= BS.writeFile ref
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 goldenVsStringDiff
@@ -156,13 +158,13 @@ goldenVsStringDiff
     --
     -- >\ref new -> ["diff", "-u", ref, new]
   -> FilePath -- ^ path to the golden file
-  -> IO LB.ByteString -- ^ action that returns a string
+  -> IO LBS.ByteString -- ^ action that returns a string
   -> TestTree
 goldenVsStringDiff name cmdf ref act =
   goldenTest
     name
-    (LB.readFile ref)
-    act
+    (BS.readFile ref)
+    (LBS.toStrict <$> act)
     cmp
     upd
   where
@@ -170,7 +172,7 @@ goldenVsStringDiff name cmdf ref act =
   cmp _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
 
     -- Write act output to temporary ("new") file
-    LB.hPut tmpHandle actBS >> hFlush tmpHandle
+    BS.hPut tmpHandle actBS >> hFlush tmpHandle
 
     let cmd = cmdf ref tmpFile
 
@@ -186,7 +188,7 @@ goldenVsStringDiff name cmdf ref act =
       ExitSuccess -> Nothing
       _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
 
-  upd = LB.writeFile ref
+  upd = BS.writeFile ref
 
 -- | Like 'writeFile', but uses binary mode
 writeBinaryFile :: FilePath -> String -> IO ()
