@@ -67,9 +67,6 @@ import Control.Monad
 import Control.DeepSeq
 import qualified Data.Set as Set
 
--- trick to avoid an explicit dependency on transformers
-import Control.Monad.Error (liftIO)
-
 -- | Compare a given file contents against the golden file contents
 goldenVsFile
   :: TestName -- ^ test name
@@ -80,8 +77,8 @@ goldenVsFile
 goldenVsFile name ref new act =
   goldenTest
     name
-    (vgReadFile ref)
-    (liftIO act >> vgReadFile new)
+    (LB.readFile ref)
+    (act >> LB.readFile new)
     cmp
     upd
   where
@@ -97,8 +94,8 @@ goldenVsString
 goldenVsString name ref act =
   goldenTest
     name
-    (vgReadFile ref)
-    (liftIO act)
+    (LB.readFile ref)
+    act
     cmp
     upd
   where
@@ -129,7 +126,7 @@ goldenVsFileDiff name cmdf ref new act =
   goldenTest
     name
     (return ())
-    (liftIO act)
+    act
     cmp
     upd
   where
@@ -164,8 +161,8 @@ goldenVsStringDiff
 goldenVsStringDiff name cmdf ref act =
   goldenTest
     name
-    (vgReadFile ref)
-    (liftIO act)
+    (LB.readFile ref)
+    act
     cmp
     upd
   where
