@@ -1,11 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Test.Tasty.Golden.Advanced
   ( -- * The main function
-    goldenTest,
-
-    -- * Compatibility stubs
-    ValueGetter,
-    vgReadFile
+    goldenTest
   )
 where
 

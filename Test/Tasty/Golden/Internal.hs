@@ -5,7 +5,6 @@ module Test.Tasty.Golden.Internal where
 import Control.DeepSeq
 import Control.Exception
 import Data.Typeable (Typeable)
-import Data.ByteString.Lazy as LB
 import Options.Applicative
 import Data.Tagged
 import Data.Proxy
@@ -63,16 +62,3 @@ runGolden (Golden getGolden getTested cmp update) (AcceptTests accept) = do
 
       Nothing ->
         return $ testPassed ""
-
-----------------------------------------------------------------------
---                    Compatibility stubs
-----------------------------------------------------------------------
-
--- | Type synonym provided for backwards compatibility
-type ValueGetter r = IO
-
--- | This function is provided for backwards compatibility only.
---
--- Use 'LB.readFile' instead.
-vgReadFile :: FilePath -> ValueGetter r ByteString
-vgReadFile = LB.readFile
