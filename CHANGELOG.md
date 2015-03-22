@@ -1,6 +1,28 @@
 Changes
 =======
 
+Version 2.3
+-----------
+
+* Accepting tests is no longer done by a separate ingredient; instead it is now
+  an option that affects tests themselves.
+    * `--accept` used to run only golden tests; now all tests are run, but only
+      golden tests are affected by this option
+    * when accepting, all the usual options apply (such as `-j`)
+    * when accepting, the interace is the same as when running
+    * `defaultMain` and `acceptingTests` are kept for compatibility, but do not
+      do anything and are obsolete
+* When a golden test file does not exist, it is created automatically, even when
+  `--accept` is not specified. You'll see a message like
+
+        UnboxedTuples:                 OK (0.04s)
+          Golden file did not exist; created
+
+* No longer use lazy IO
+    * `ValueGetter` type is gone (replaced by `IO`)
+    * Because of that, the type of the primitive `goldenTest` is changed
+    * `vgReadFile` function is gone (replaced by `Data.ByteString.readFile`)
+
 Version 2.2.2.4
 ---------------
 
