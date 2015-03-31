@@ -38,7 +38,7 @@ library
   build-depends:
     base ==4.*,
     tasty >= 0.8,
-    bytestring,
+    bytestring >= 0.10,
     process,
     mtl,
     optparse-applicative,
