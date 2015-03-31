@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.0.1
+---------------
+
+Impose a lower bound version constraint on bytestring.
+
 Version 2.3
 -----------
 
