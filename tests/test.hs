@@ -5,25 +5,31 @@ import System.IO.Temp
 import System.FilePath
 import System.Directory
 import Data.List (sort)
+import qualified Data.ByteString.Lazy.Char8 as LC
 
 touch f = writeFile f ""
 
-main = defaultMain $
-  testCase "findByExtension" $
+main = defaultMain $ testGroup "tests"
+  [ testCase "findByExtension" $
     withSystemTempDirectory "golden-test" $ \basedir -> do
 
-      setCurrentDirectory basedir
+      createDirectory (basedir </> "d1")
+      createDirectory (basedir </> "d1" </> "d2")
+      touch (basedir </> "f1.c")
+      touch (basedir </> "f2.h")
+      touch (basedir </> "f2.exe")
+      touch (basedir </> "d1" </> "g1.c")
+      touch (basedir </> "d1" </> "d2" </> "h1.c")
+      touch (basedir </> "d1" </> "d2" </> "h1.exe")
+      touch (basedir </> "d1" </> "d2" </> "h1")
 
-      createDirectory ("d1")
-      createDirectory ("d1" </> "d2")
-      touch ("f1.c")
-      touch ("f2.h")
-      touch ("f2.exe")
-      touch ("d1" </> "g1.c")
-      touch ("d1" </> "d2" </> "h1.c")
-      touch ("d1" </> "d2" </> "h1.exe")
-      touch ("d1" </> "d2" </> "h1")
-
-      files <- findByExtension [".c", ".h"] "."
+      files <- findByExtension [".c", ".h"] basedir
       sort files @?= sort
-        ["./d1/d2/h1.c","./d1/g1.c","./f1.c","./f2.h"]
+        [ basedir ++ "/d1/d2/h1.c"
+        , basedir ++ "/d1/g1.c"
+        , basedir ++ "/f1.c"
+        , basedir ++ "/f2.h"]
+  , goldenVsText "golden text"
+      ("tests" </> "golden")
+      (return $ LC.pack "1\n2\n3")
+  ]
