@@ -5,6 +5,7 @@ import System.IO.Temp
 import System.FilePath
 import System.Directory
 import Data.List (sort)
+import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy.Char8 as LC
 
 touch f = writeFile f ""
@@ -32,4 +33,5 @@ main = defaultMain $ testGroup "tests"
   , goldenVsText "golden text"
       ("tests" </> "golden")
       (return $ LC.pack "1\n2\n3")
+      C.unpack
   ]

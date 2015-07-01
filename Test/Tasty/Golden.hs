@@ -59,7 +59,6 @@ import Text.Printf
 import Text.PrettyPrint
 import Data.Algorithm.DiffContext
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
 import System.IO
 import System.IO.Temp
@@ -96,9 +95,19 @@ goldenVsText
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
   -> IO LBS.ByteString -- ^ action that returns text
+  -> (BS.ByteString -> String) -- ^ function to convert 'ByteString' representation of the text to 'String'
+                               --
+                               -- E.g. for ASCII text, using "Data.ByteString.Char8#v:unpack":
+                               --
+                               -- > C.unpack
+                               --
+                               -- or for Utf8 text, using "Data.Text.Encoding#v:decodeUtf8":
+                               --
+                               -- > (T.unpack . decodeUtf8)
+                               --
   -> TestTree -- ^ the test verifies that the text is the same as the golden file contents
               -- and displays diff otherwise
-goldenVsText name ref act =
+goldenVsText name ref act decode =
   goldenTest
     name
     (BS.readFile ref)
@@ -111,8 +120,8 @@ goldenVsText name ref act =
     prettyContextDiff
       (text ref)
       (text "test output")
-      (text . C.unpack)
-      (getContextDiff 3 (C.lines x) (C.lines y))
+      text
+      (getContextDiff 3 (lines $ decode x) (lines $ decode y))
 
 -- | Compare a given byte string against the golden file contents
 goldenVsString
