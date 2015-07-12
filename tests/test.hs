@@ -5,7 +5,7 @@ import System.IO.Temp
 import System.FilePath
 import System.Directory
 import Data.List (sort)
-import qualified Data.ByteString.Lazy.Char8 as LC
+import qualified Data.Text.Lazy as LT
 
 touch f = writeFile f ""
 
@@ -29,7 +29,7 @@ main = defaultMain $ testGroup "tests"
         , basedir ++ "/d1/g1.c"
         , basedir ++ "/f1.c"
         , basedir ++ "/f2.h"]
-  , goldenVsText "golden text"
+  , goldenVsTextDiff "golden text"
       ("tests" </> "golden")
-      (return $ LC.pack "1\n2\n3")
+      (return $ LT.pack "1\n2\n3")
   ]

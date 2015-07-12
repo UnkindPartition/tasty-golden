@@ -44,7 +44,7 @@ as binary does the job.
 
 module Test.Tasty.Golden
   ( goldenVsFile
-  , goldenVsText
+  , goldenVsTextDiff
   , goldenVsString
   , goldenVsFileDiff
   , goldenVsStringDiff
@@ -59,8 +59,10 @@ import Text.Printf
 import Text.PrettyPrint
 import Data.Algorithm.DiffContext
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy.IO as LT
+import qualified Data.Text.Lazy as LT
 import System.IO
 import System.IO.Temp
 import System.Process
@@ -91,28 +93,33 @@ goldenVsFile name ref new act =
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = BS.writeFile ref
 
--- | Compare value returned by a given action against expected text from the golden file
-goldenVsText
+-- | Compare value returned by a given action against expected text from the golden file.
+--
+-- In case of mismatch, a diff will be printed. The diff is computed by an
+-- internal algorithm, so unlike 'goldenVsFileDiff', this doesn't require
+-- an external diff program.
+goldenVsTextDiff
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
-  -> IO LBS.ByteString -- ^ action that returns text
+  -> IO LT.Text -- ^ action that returns lazy 'Text'
   -> TestTree -- ^ the test verifies that the text is the same as the golden file contents
               -- and displays diff otherwise
-goldenVsText name ref act =
+goldenVsTextDiff name ref act =
   goldenTest
     name
-    (BS.readFile ref)
-    (LBS.toStrict <$> act)
+    -- NB: not using LT.readFile to avoid lazy I/O
+    (LT.fromStrict <$> T.readFile ref)
+    act
     cmp
-    (BS.writeFile ref)
+    (LT.writeFile ref)
   where
   cmp x y = simpleCmp (diff x y) x y
   diff x y = render $
     prettyContextDiff
       (text ref)
       (text "test output")
-      (text . C.unpack)
-      (getContextDiff 3 (C.lines x) (C.lines y))
+      (text . LT.unpack)
+      (getContextDiff 3 (LT.lines x) (LT.lines y))
 
 -- | Compare a given byte string against the golden file contents
 goldenVsString
