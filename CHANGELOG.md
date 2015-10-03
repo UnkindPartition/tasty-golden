@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.0.2
+---------------
+
+Switch from temporary-rc to temporary
+
 Version 2.3.0.1
 ---------------
 
