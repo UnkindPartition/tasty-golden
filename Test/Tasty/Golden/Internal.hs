@@ -45,31 +45,37 @@ instance IsTest Golden where
 runGolden :: Golden -> AcceptTests -> IO Result
 runGolden (Golden getGolden getTested cmp update) (AcceptTests accept) = do
   do
-    new <- getTested
-    mbRef <- try getGolden
+    mbNew <- try getTested
 
-    case mbRef of
-      Left e | isDoesNotExistError e -> do
-        update new
-        return $ testPassed "Golden file did not exist; created"
+    case mbNew of
+      Left e -> do
+        return $ testFailed $ show (e :: SomeException)
+      Right new -> do
 
-        | otherwise -> throwIO e
+        mbRef <- try getGolden
 
-      Right ref -> do
-
-        result <- cmp ref new
-
-        case result of
-          Just _reason | accept -> do
-            -- test failed; accept the new version
+        case mbRef of
+          Left e | isDoesNotExistError e -> do
             update new
-            return $ testPassed "Accepted the new version"
+            return $ testPassed "Golden file did not exist; created"
 
-          Just reason -> do
-            -- Make sure that the result is fully evaluated and doesn't depend
-            -- on yet un-read lazy input
-            evaluate . rnf $ reason
-            return $ testFailed reason
+            | otherwise -> throwIO e
 
-          Nothing ->
-            return $ testPassed ""
+          Right ref -> do
+
+            result <- cmp ref new
+
+            case result of
+              Just _reason | accept -> do
+                -- test failed; accept the new version
+                update new
+                return $ testPassed "Accepted the new version"
+
+              Just reason -> do
+                -- Make sure that the result is fully evaluated and doesn't depend
+                -- on yet un-read lazy input
+                evaluate . rnf $ reason
+                return $ testFailed reason
+
+              Nothing ->
+                return $ testPassed ""
