@@ -1,6 +1,12 @@
 Changes
 =======
 
+Version 2.3.1
+-------------
+
+Intercept exceptions thrown by the test, adhering to the new tasty API
+contract.
+
 Version 2.3.0.2
 ---------------
 
