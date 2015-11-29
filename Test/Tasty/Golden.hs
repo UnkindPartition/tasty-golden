@@ -44,6 +44,7 @@ as binary does the job.
 
 module Test.Tasty.Golden
   ( goldenVsFile
+  , goldenVsText
   , goldenVsString
   , goldenVsFileDiff
   , goldenVsStringDiff
@@ -55,6 +56,8 @@ module Test.Tasty.Golden
 import Test.Tasty.Providers
 import Test.Tasty.Golden.Advanced
 import Text.Printf
+import Text.PrettyPrint
+import Data.Algorithm.DiffContext
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import System.IO
@@ -87,11 +90,44 @@ goldenVsFile name ref new act =
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = BS.writeFile ref
 
--- | Compare a given string against the golden file contents
+-- | Compare value returned by a given action against expected text from the golden file
+goldenVsText
+  :: TestName -- ^ test name
+  -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
+  -> IO LBS.ByteString -- ^ action that returns text
+  -> (BS.ByteString -> String) -- ^ function to convert 'ByteString' representation of the text to 'String'
+                               --
+                               -- E.g. for ASCII text, using "Data.ByteString.Char8#v:unpack":
+                               --
+                               -- > C.unpack
+                               --
+                               -- or for Utf8 text, using "Data.Text.Encoding#v:decodeUtf8":
+                               --
+                               -- > (T.unpack . decodeUtf8)
+                               --
+  -> TestTree -- ^ the test verifies that the text is the same as the golden file contents
+              -- and displays diff otherwise
+goldenVsText name ref act decode =
+  goldenTest
+    name
+    (BS.readFile ref)
+    (LBS.toStrict <$> act)
+    cmp
+    (BS.writeFile ref)
+  where
+  cmp x y = simpleCmp (diff x y) x y
+  diff x y = render $
+    prettyContextDiff
+      (text ref)
+      (text "test output")
+      text
+      (getContextDiff 3 (lines $ decode x) (lines $ decode y))
+
+-- | Compare a given byte string against the golden file contents
 goldenVsString
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
-  -> IO LBS.ByteString -- ^ action that returns a string
+  -> IO LBS.ByteString -- ^ action that returns a byte string
   -> TestTree -- ^ the test verifies that the returned string is the same as the golden file contents
 goldenVsString name ref act =
   goldenTest
