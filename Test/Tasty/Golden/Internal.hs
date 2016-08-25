@@ -6,6 +6,7 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Typeable (Typeable)
 import Options.Applicative
+import Data.Monoid
 import Data.Tagged
 import Data.Proxy
 import System.IO.Error (isDoesNotExistError)
