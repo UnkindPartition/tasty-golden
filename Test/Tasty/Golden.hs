@@ -1,4 +1,7 @@
 {- |
+To get started with golden testing and this library, see
+<https://ro-che.info/articles/2017-12-04-golden-tests Introduction to golden testing>.
+
 This module provides a simplified interface. If you want more, see
 "Test.Tasty.Golden.Advanced".
 

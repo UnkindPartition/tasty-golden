@@ -8,6 +8,9 @@ description:
   To pass the test, this output file should be identical to the corresponding
   «golden» file, which contains the correct result for the test.
 
+  To get started with golden testing and this library, see
+  <https://ro-che.info/articles/2017-12-04-golden-tests Introduction to golden testing>.
+
 license:             MIT
 license-file:        LICENSE
 Homepage:            https://github.com/feuerbach/tasty-golden
