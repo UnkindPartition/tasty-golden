@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.1.2
+---------------
+
+Docs: link to an introductory blog post
+
 Version 2.3.1.1
 ---------------
 
