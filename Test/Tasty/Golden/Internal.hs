@@ -29,15 +29,10 @@ newtype AcceptTests = AcceptTests Bool
   deriving (Eq, Ord, Typeable)
 instance IsOption AcceptTests where
   defaultValue = AcceptTests False
-  parseValue = fmap AcceptTests . safeRead
+  parseValue = fmap AcceptTests . safeReadBool
   optionName = return "accept"
   optionHelp = return "Accept current results of golden tests"
-  optionCLParser =
-    fmap AcceptTests $
-    switch
-      (  long (untag (optionName :: Tagged AcceptTests String))
-      <> help (untag (optionHelp :: Tagged AcceptTests String))
-      )
+  optionCLParser = flagCLParser Nothing (AcceptTests True)
 
 instance IsTest Golden where
   run opts golden _ = runGolden golden (lookupOption opts)
