@@ -5,7 +5,6 @@ module Test.Tasty.Golden.Internal where
 import Control.DeepSeq
 import Control.Exception
 import Data.Typeable (Typeable)
-import Options.Applicative
 import Data.Monoid
 import Data.Tagged
 import Data.Proxy
@@ -32,12 +31,7 @@ instance IsOption AcceptTests where
   parseValue = fmap AcceptTests . safeRead
   optionName = return "accept"
   optionHelp = return "Accept current results of golden tests"
-  optionCLParser =
-    fmap AcceptTests $
-    switch
-      (  long (untag (optionName :: Tagged AcceptTests String))
-      <> help (untag (optionHelp :: Tagged AcceptTests String))
-      )
+  optionCLParser = onValue (AcceptTests True)
 
 instance IsTest Golden where
   run opts golden _ = runGolden golden (lookupOption opts)
