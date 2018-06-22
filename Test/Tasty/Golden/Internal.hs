@@ -34,12 +34,27 @@ instance IsOption AcceptTests where
   optionHelp = return "Accept current results of golden tests"
   optionCLParser = flagCLParser Nothing (AcceptTests True)
 
-instance IsTest Golden where
-  run opts golden _ = runGolden golden (lookupOption opts)
-  testOptions = return [Option (Proxy :: Proxy AcceptTests)]
+-- | This option, when set to 'True', specifies to error when a file does
+-- not exist, instead of creating a new file.
+newtype NoCreateFile = NoCreateFile Bool
+  deriving (Eq, Ord, Typeable)
+instance IsOption NoCreateFile where
+  defaultValue = NoCreateFile False
+  parseValue = fmap NoCreateFile . safeReadBool
+  optionName = return "no-create"
+  optionHelp = return "Error when goldens file does not exist"
+  optionCLParser = flagCLParser Nothing (NoCreateFile True)
 
-runGolden :: Golden -> AcceptTests -> IO Result
-runGolden (Golden getGolden getTested cmp update) (AcceptTests accept) = do
+instance IsTest Golden where
+  run opts golden _ = runGolden golden (lookupOption opts) (lookupOption opts)
+  testOptions =
+    return
+      [ Option (Proxy :: Proxy AcceptTests)
+      , Option (Proxy :: Proxy NoCreateFile)
+      ]
+
+runGolden :: Golden -> AcceptTests -> NoCreateFile -> IO Result
+runGolden (Golden getGolden getTested cmp update) (AcceptTests accept) (NoCreateFile noCreate) = do
   do
     mbNew <- try getTested
 
@@ -51,9 +66,12 @@ runGolden (Golden getGolden getTested cmp update) (AcceptTests accept) = do
         mbRef <- try getGolden
 
         case mbRef of
-          Left e | isDoesNotExistError e -> do
-            update new
-            return $ testPassed "Golden file did not exist; created"
+          Left e | isDoesNotExistError e ->
+            if noCreate
+              then return $ testFailed "Golden file does not exist; --no-create flag specified"
+              else do
+                update new
+                return $ testPassed "Golden file did not exist; created"
 
             | otherwise -> throwIO e
 
