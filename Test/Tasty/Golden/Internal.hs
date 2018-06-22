@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, DeriveDataTypeable,
-    MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
+    MultiParamTypeClasses, GeneralizedNewtypeDeriving, RecordWildCards #-}
 module Test.Tasty.Golden.Internal where
 
 import Control.DeepSeq
@@ -23,9 +23,24 @@ data Golden =
       (a -> IO ())
   deriving Typeable
 
+-- | Options for running a Goldens test.
+data GoldenOptions = GoldenOptions
+  { accept :: Bool
+  , noCreate :: Bool
+  }
+
+mkGoldenOptions :: OptionSet -> GoldenOptions
+mkGoldenOptions opts = GoldenOptions
+  { accept = unAcceptTests getOpt
+  , noCreate = unNoCreateFile getOpt
+  }
+  where
+    getOpt :: IsOption v => v
+    getOpt = lookupOption opts
+
 -- | This option, when set to 'True', specifies that we should run in the
 -- «accept tests» mode
-newtype AcceptTests = AcceptTests Bool
+newtype AcceptTests = AcceptTests { unAcceptTests :: Bool }
   deriving (Eq, Ord, Typeable)
 instance IsOption AcceptTests where
   defaultValue = AcceptTests False
@@ -36,7 +51,7 @@ instance IsOption AcceptTests where
 
 -- | This option, when set to 'True', specifies to error when a file does
 -- not exist, instead of creating a new file.
-newtype NoCreateFile = NoCreateFile Bool
+newtype NoCreateFile = NoCreateFile { unNoCreateFile :: Bool }
   deriving (Eq, Ord, Typeable)
 instance IsOption NoCreateFile where
   defaultValue = NoCreateFile False
@@ -46,15 +61,15 @@ instance IsOption NoCreateFile where
   optionCLParser = flagCLParser Nothing (NoCreateFile True)
 
 instance IsTest Golden where
-  run opts golden _ = runGolden golden (lookupOption opts) (lookupOption opts)
+  run opts golden _ = runGolden golden $ mkGoldenOptions opts
   testOptions =
     return
       [ Option (Proxy :: Proxy AcceptTests)
       , Option (Proxy :: Proxy NoCreateFile)
       ]
 
-runGolden :: Golden -> AcceptTests -> NoCreateFile -> IO Result
-runGolden (Golden getGolden getTested cmp update) (AcceptTests accept) (NoCreateFile noCreate) = do
+runGolden :: Golden -> GoldenOptions -> IO Result
+runGolden (Golden getGolden getTested cmp update) GoldenOptions{..} = do
   do
     mbNew <- try getTested
 
