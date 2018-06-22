@@ -1,10 +1,15 @@
 Changes
 =======
 
+Version 2.3.2
+-------------
+
+Add a `--no-create` flag
+
 Version 2.3.1.3
 ---------------
 
-* Make the environment variable `TASTY_ACCEPT=True` work, and make the value
+Make the environment variable `TASTY_ACCEPT=True` work, and make the value
     case-insensitive (so `TASTY_ACCEPT=true` works, too)
 
 Version 2.3.1.2
