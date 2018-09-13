@@ -47,10 +47,11 @@ as binary does the job.
 
 module Test.Tasty.Golden
   ( goldenVsFile
-  , goldenVsText
   , goldenVsString
   , goldenVsFileDiff
+  , goldenVsFileDiffPure
   , goldenVsStringDiff
+  , goldenVsStringDiffPure
   , writeBinaryFile
   , findByExtension
   )
@@ -93,12 +94,9 @@ goldenVsFile name ref new act =
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = BS.writeFile ref
 
--- | Compare value returned by a given action against expected text from the golden file
-goldenVsText
-  :: TestName -- ^ test name
-  -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
-  -> IO LBS.ByteString -- ^ action that returns text
-  -> (BS.ByteString -> String) -- ^ function to convert 'ByteString' representation of the text to 'String'
+-- | Compare a given file contents against the golden file contents, producing a diff output
+goldenVsFileDiffPure
+  :: (BS.ByteString -> String) -- ^ function to convert 'ByteString' representation of the text to 'String'
                                --
                                -- E.g. for ASCII text, using "Data.ByteString.Char8#v:unpack":
                                --
@@ -107,24 +105,43 @@ goldenVsText
                                -- or for Utf8 text, using "Data.Text.Encoding#v:decodeUtf8":
                                --
                                -- > (T.unpack . decodeUtf8)
-                               --
+  -> TestName -- ^ test name
+  -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
+  -> FilePath -- ^ path to the output file
+  -> IO () -- ^ the action that creates the output file
   -> TestTree -- ^ the test verifies that the text is the same as the golden file contents
               -- and displays diff otherwise
-goldenVsText name ref act decode =
+goldenVsFileDiffPure decode name ref new act =
+  goldenTest
+    name
+    (BS.readFile ref)
+    (act >> BS.readFile new)
+    (diffCmp decode ref new)
+    (BS.writeFile ref)
+
+-- | Compare value returned by a given action against expected text from the golden file, producing a diff output
+goldenVsStringDiffPure
+  :: (BS.ByteString -> String) -- ^ function to convert 'ByteString' representation of the text to 'String'
+                               --
+                               -- E.g. for ASCII text, using "Data.ByteString.Char8#v:unpack":
+                               --
+                               -- > C.unpack
+                               --
+                               -- or for Utf8 text, using "Data.Text.Encoding#v:decodeUtf8":
+                               --
+                               -- > (T.unpack . decodeUtf8)
+  -> TestName -- ^ test name
+  -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
+  -> IO LBS.ByteString -- ^ action that returns text
+  -> TestTree -- ^ the test verifies that the text is the same as the golden file contents
+              -- and displays diff otherwise
+goldenVsStringDiffPure decode name ref act =
   goldenTest
     name
     (BS.readFile ref)
     (LBS.toStrict <$> act)
-    cmp
+    (diffCmp decode ref "testOutput")
     (BS.writeFile ref)
-  where
-  cmp x y = simpleCmp (diff x y) x y
-  diff x y = render $
-    prettyContextDiff
-      (text ref)
-      (text "test output")
-      text
-      (getContextDiff 3 (lines $ decode x) (lines $ decode y))
 
 -- | Compare a given byte string against the golden file contents
 goldenVsString
@@ -144,6 +161,22 @@ goldenVsString name ref act =
     where
     msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
   upd = BS.writeFile ref
+
+diffCmp
+  :: (BS.ByteString -> String)
+  -> String
+  -> String
+  -> BS.ByteString
+  -> BS.ByteString
+  -> IO (Maybe String)
+diffCmp decode lhs rhs x y = simpleCmp (diff x y) x y
+  where
+  diff l r = render $
+    prettyContextDiff
+      (text lhs)
+      (text rhs)
+      text
+      (getContextDiff 3 (lines $ decode l) (lines $ decode r))
 
 simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
 simpleCmp e x y =

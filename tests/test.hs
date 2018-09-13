@@ -30,8 +30,8 @@ main = defaultMain $ testGroup "tests"
         , basedir ++ "/d1/g1.c"
         , basedir ++ "/f1.c"
         , basedir ++ "/f2.h"]
-  , goldenVsText "golden text"
-      ("tests" </> "golden")
+  , goldenVsStringDiffPure C.unpack
+      "golden diff"
+      ("tests" </> "testDiff.golden")
       (return $ LC.pack "1\n2\n3")
-      C.unpack
   ]
