@@ -17,7 +17,7 @@ Homepage:            https://github.com/feuerbach/tasty-golden
 Bug-reports:         https://github.com/feuerbach/tasty-golden/issues
 author:              Roman Cheplyaka
 maintainer:          Roman Cheplyaka <roma@ro-che.info>
--- copyright:           
+-- copyright:
 category:            Testing
 build-type:          Simple
 cabal-version:       >=1.14
@@ -42,8 +42,9 @@ library
     base ==4.*,
     tasty >= 1.0.1,
     bytestring >= 0.10,
+    pretty,
+    Diff >= 0.3.1,
     process,
-    mtl,
     optparse-applicative,
     filepath,
     temporary,
@@ -67,6 +68,7 @@ Test-suite test
     , tasty
     , tasty-hunit
     , tasty-golden
+    , bytestring
     , filepath
     , directory
     , process
