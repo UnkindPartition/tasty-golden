@@ -72,8 +72,8 @@ import Control.Applicative
 import Control.DeepSeq
 import qualified Data.Set as Set
 
--- | Create an output file and then compare its contents against the golden
--- file's contents.
+-- | Compare the output file's contents against the golden file's contents
+-- after the given action has created the output file.
 goldenVsFile
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
