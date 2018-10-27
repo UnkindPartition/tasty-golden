@@ -72,7 +72,8 @@ import Control.Applicative
 import Control.DeepSeq
 import qualified Data.Set as Set
 
--- | Compare a given file contents against the golden file contents
+-- | Compare the output file's contents against the golden file's contents
+-- after the given action has created the output file.
 goldenVsFile
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
@@ -90,7 +91,7 @@ goldenVsFile name ref new act =
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = BS.writeFile ref
 
--- | Compare a given string against the golden file contents
+-- | Compare a given string against the golden file's contents.
 goldenVsString
   :: TestName -- ^ test name
   -> FilePath -- ^ path to the «golden» file (the file that contains correct output)
@@ -193,7 +194,7 @@ goldenVsStringDiff name cmdf ref act =
 
   upd = BS.writeFile ref
 
--- | Like 'writeFile', but uses binary mode
+-- | Like 'writeFile', but uses binary mode.
 writeBinaryFile :: FilePath -> String -> IO ()
 writeBinaryFile f txt = withBinaryFile f WriteMode (\hdl -> hPutStr hdl txt)
 
