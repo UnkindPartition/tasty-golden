@@ -45,6 +45,7 @@ comparison function when necessary. But most of the time treating the files
 as binary does the job.
 -}
 
+{-# LANGUAGE CPP #-}
 module Test.Tasty.Golden
   ( goldenVsFile
   , goldenVsString
@@ -101,7 +102,7 @@ goldenVsString name ref act =
   goldenTest
     name
     (BS.readFile ref)
-    (LBS.toStrict <$> act)
+    (toStrict <$> act)
     cmp
     upd
   where
@@ -109,6 +110,13 @@ goldenVsString name ref act =
     where
     msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
   upd = BS.writeFile ref
+
+toStrict :: LBS.ByteString -> BS.ByteString
+#if MIN_VERSION_bytestring(0,10,0)
+toStrict = LBS.toStrict
+#else
+toStrict = BS.concat . LBS.toChunks
+#endif
 
 simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
 simpleCmp e x y =
@@ -168,7 +176,7 @@ goldenVsStringDiff name cmdf ref act =
   goldenTest
     name
     (BS.readFile ref)
-    (LBS.toStrict <$> act)
+    (toStrict <$> act)
     cmp
     upd
   where
