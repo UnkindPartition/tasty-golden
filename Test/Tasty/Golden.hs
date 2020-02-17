@@ -69,7 +69,6 @@ import System.FilePath
 import System.Directory
 import Control.Exception
 import Control.Monad
-import Control.Applicative
 import Control.DeepSeq
 import qualified Data.Set as Set
 
