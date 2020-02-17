@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.2.1
+---------------
+
+Create missing directories when writing golden files
+
 Version 2.3.2
 -------------
 
