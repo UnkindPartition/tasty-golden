@@ -90,7 +90,7 @@ goldenVsFile name ref new act =
     upd
   where
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
-  upd = BS.writeFile ref
+  upd = createDirectoriesAndWriteFile ref
 
 -- | Compare a given string against the golden file's contents.
 goldenVsString
@@ -109,7 +109,7 @@ goldenVsString name ref act =
   cmp x y = simpleCmp msg x y
     where
     msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
-  upd = BS.writeFile ref
+  upd = createDirectoriesAndWriteFile ref
 
 toStrict :: LBS.ByteString -> BS.ByteString
 #if MIN_VERSION_bytestring(0,10,0)
@@ -157,7 +157,7 @@ goldenVsFileDiff name cmdf ref new act =
       ExitSuccess -> Nothing
       _ -> Just out
 
-  upd _ = BS.readFile new >>= BS.writeFile ref
+  upd _ = BS.readFile new >>= createDirectoriesAndWriteFile ref
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 goldenVsStringDiff
@@ -246,3 +246,16 @@ findByExtension extsList = go where
             if takeExtension path `Set.member` exts
               then [path]
               else []
+
+-- | Like 'BS.writeFile', but also create parent directories if they are
+-- missing.
+createDirectoriesAndWriteFile
+  :: FilePath
+  -> BS.ByteString
+  -> IO ()
+createDirectoriesAndWriteFile path bs = do
+  let dir = takeDirectory path
+  createDirectoryIfMissing
+    True -- create parents too
+    dir
+  BS.writeFile path bs
