@@ -53,6 +53,7 @@ module Test.Tasty.Golden
   , goldenVsStringDiff
   , writeBinaryFile
   , findByExtension
+  , createDirectoriesAndWriteFile
   )
   where
 
