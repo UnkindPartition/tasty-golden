@@ -77,3 +77,28 @@ Test-suite test
     , directory
     , process
     , temporary
+
+flag build-example
+  default: False
+  manual: True
+
+-- An example test suite used for testing.
+-- Tries to exercise all ways to create golden tests.
+-- Not built by default. To build it, turn on the build-example flag:
+--
+--  stack build :example --flag tasty-golden:build-example
+executable example
+  Default-language:
+    Haskell2010
+  Hs-source-dirs:
+    example
+  Main-is:
+    example.hs
+  if (! flag(build-example))
+    buildable: False
+  Build-depends:
+      base >= 4 && < 5
+    , filepath
+    , bytestring
+    , tasty
+    , tasty-golden
