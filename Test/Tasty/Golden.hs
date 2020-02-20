@@ -45,7 +45,6 @@ comparison function when necessary. But most of the time treating the files
 as binary does the job.
 -}
 
-{-# LANGUAGE CPP #-}
 module Test.Tasty.Golden
   ( goldenVsFile
   , goldenVsString
@@ -60,8 +59,7 @@ module Test.Tasty.Golden
 import Test.Tasty.Providers
 import Test.Tasty.Golden.Advanced
 import Text.Printf
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import System.IO
 import System.IO.Temp
 import System.Process
@@ -70,7 +68,6 @@ import System.FilePath
 import System.Directory
 import Control.Exception
 import Control.Monad
-import Control.DeepSeq
 import qualified Data.Set as Set
 
 -- | Compare the output file's contents against the golden file's contents
@@ -84,8 +81,8 @@ goldenVsFile
 goldenVsFile name ref new act =
   goldenTest
     name
-    (BS.readFile ref)
-    (act >> BS.readFile new)
+    (readFileStrict ref)
+    (act >> readFileStrict new)
     cmp
     upd
   where
@@ -101,8 +98,8 @@ goldenVsString
 goldenVsString name ref act =
   goldenTest
     name
-    (BS.readFile ref)
-    (toStrict <$> act)
+    (readFileStrict ref)
+    act
     cmp
     upd
   where
@@ -110,13 +107,6 @@ goldenVsString name ref act =
     where
     msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
   upd = createDirectoriesAndWriteFile ref
-
-toStrict :: LBS.ByteString -> BS.ByteString
-#if MIN_VERSION_bytestring(0,10,0)
-toStrict = LBS.toStrict
-#else
-toStrict = BS.concat . LBS.toChunks
-#endif
 
 simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
 simpleCmp e x y =
@@ -149,15 +139,14 @@ goldenVsFileDiff name cmdf ref new act =
   cmp _ _ = do
     (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
     -- strictly read the whole output, so that the process can terminate
-    out <- hGetContents sout
-    evaluate . rnf $ out
+    out <- hGetContentsStrict sout
 
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just out
+      _ -> Just $ LBS.unpack out
 
-  upd _ = BS.readFile new >>= createDirectoriesAndWriteFile ref
+  upd _ = readFileStrict new >>= createDirectoriesAndWriteFile ref
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 goldenVsStringDiff
@@ -175,8 +164,8 @@ goldenVsStringDiff
 goldenVsStringDiff name cmdf ref act =
   goldenTest
     name
-    (BS.readFile ref)
-    (toStrict <$> act)
+    (readFileStrict ref)
+    (act)
     cmp
     upd
   where
@@ -184,7 +173,7 @@ goldenVsStringDiff name cmdf ref act =
   cmp _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
 
     -- Write act output to temporary ("new") file
-    BS.hPut tmpHandle actBS >> hFlush tmpHandle
+    LBS.hPut tmpHandle actBS >> hFlush tmpHandle
 
     let cmd = cmdf ref tmpFile
 
@@ -192,15 +181,14 @@ goldenVsStringDiff name cmdf ref act =
 
     (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
     -- strictly read the whole output, so that the process can terminate
-    out <- hGetContents sout
-    evaluate . rnf $ out
+    out <- hGetContentsStrict sout
 
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) out)
+      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) (LBS.unpack out))
 
-  upd = BS.writeFile ref
+  upd = createDirectoriesAndWriteFile ref
 
 -- | Like 'writeFile', but uses binary mode.
 writeBinaryFile :: FilePath -> String -> IO ()
@@ -251,11 +239,32 @@ findByExtension extsList = go where
 -- missing.
 createDirectoriesAndWriteFile
   :: FilePath
-  -> BS.ByteString
+  -> LBS.ByteString
   -> IO ()
 createDirectoriesAndWriteFile path bs = do
   let dir = takeDirectory path
   createDirectoryIfMissing
     True -- create parents too
     dir
-  BS.writeFile path bs
+  LBS.writeFile path bs
+
+-- | Force the evaluation of a lazily-produced bytestring.
+--
+-- This is important to close the file handles.
+--
+-- See <https://ro-che.info/articles/2015-05-28-force-list>.
+forceLbs :: LBS.ByteString -> ()
+forceLbs = LBS.foldr seq ()
+
+readFileStrict :: FilePath -> IO LBS.ByteString
+readFileStrict path = do
+  s <- LBS.readFile path
+  evaluate $ forceLbs s
+  return s
+
+hGetContentsStrict :: Handle -> IO LBS.ByteString
+hGetContentsStrict h = do
+  hSetBinaryMode h True
+  s <- LBS.hGetContents h
+  evaluate $ forceLbs s
+  return s
