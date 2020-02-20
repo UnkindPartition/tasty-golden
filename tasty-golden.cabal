@@ -76,4 +76,4 @@ Test-suite test
     , filepath
     , directory
     , process
-    , temporary-rc
+    , temporary
