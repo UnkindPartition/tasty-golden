@@ -6,7 +6,9 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Typeable (Typeable)
 import Data.Proxy
+import Data.Int
 import System.IO.Error (isDoesNotExistError)
+import Options.Applicative (metavar)
 import Test.Tasty.Providers
 import Test.Tasty.Options
 
@@ -42,12 +44,27 @@ instance IsOption NoCreateFile where
   optionHelp = return "Error when golden file does not exist"
   optionCLParser = flagCLParser Nothing (NoCreateFile True)
 
+-- | The size, in bytes, such that the (incorrect) test output is not
+-- displayed when it exceeds this size. Numeric underscores are accepted
+-- for readability.
+--
+-- The default value is 1000 (i.e. 1Kb).
+newtype SizeCutoff = SizeCutoff Int64
+  deriving (Eq, Ord, Typeable, Num, Real, Enum, Integral)
+instance IsOption SizeCutoff where
+  defaultValue = 1000
+  parseValue = fmap SizeCutoff . safeRead . filter (/= '_')
+  optionName = return "size-cutoff"
+  optionHelp = return "hide golden test output if it's larger than n bytes"
+  optionCLParser = mkOptionCLParser $ metavar "n"
+
 instance IsTest Golden where
   run opts golden _ = runGolden golden opts
   testOptions =
     return
       [ Option (Proxy :: Proxy AcceptTests)
       , Option (Proxy :: Proxy NoCreateFile)
+      , Option (Proxy :: Proxy SizeCutoff)
       ]
 
 runGolden :: Golden -> OptionSet -> IO Result

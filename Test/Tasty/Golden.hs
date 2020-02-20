@@ -45,6 +45,7 @@ comparison function when necessary. But most of the time treating the files
 as binary does the job.
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
 module Test.Tasty.Golden
   ( goldenVsFile
   , goldenVsString
@@ -56,10 +57,12 @@ module Test.Tasty.Golden
   )
   where
 
-import Test.Tasty.Providers
+import Test.Tasty
 import Test.Tasty.Golden.Advanced
+import Test.Tasty.Golden.Internal
 import Text.Printf
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Monoid
 import System.IO
 import System.IO.Temp
 import System.Process
@@ -96,16 +99,18 @@ goldenVsString
   -> IO LBS.ByteString -- ^ action that returns a string
   -> TestTree -- ^ the test verifies that the returned string is the same as the golden file contents
 goldenVsString name ref act =
+  askOption $ \sizeCutoff ->
   goldenTest
     name
     (readFileStrict ref)
     act
-    cmp
+    (cmp sizeCutoff)
     upd
   where
-  cmp x y = simpleCmp msg x y
+  cmp sizeCutoff x y = simpleCmp msg x y
     where
-    msg = printf "Test output was different from '%s'. It was: %s" ref (show y)
+    msg = printf "Test output was different from '%s'. It was:" ref <>
+      LBS.unpack (truncateLargeOutput sizeCutoff y)
   upd = createDirectoriesAndWriteFile ref
 
 simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
@@ -127,16 +132,18 @@ goldenVsFileDiff
   -> IO ()    -- ^ action that produces the output file
   -> TestTree
 goldenVsFileDiff name cmdf ref new act =
+  askOption $ \sizeCutoff ->
   goldenTest
     name
     (return ())
     act
-    cmp
+    (cmp sizeCutoff)
     upd
   where
   cmd = cmdf ref new
-  cmp _ _ | null cmd = error "goldenVsFileDiff: empty command line"
-  cmp _ _ = do
+  cmp sizeCutoff _ _
+    | null cmd = error "goldenVsFileDiff: empty command line"
+    | otherwise = do
     (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
@@ -144,7 +151,7 @@ goldenVsFileDiff name cmdf ref new act =
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just $ LBS.unpack out
+      _ -> Just . LBS.unpack . truncateLargeOutput sizeCutoff $ out
 
   upd _ = readFileStrict new >>= createDirectoriesAndWriteFile ref
 
@@ -162,15 +169,16 @@ goldenVsStringDiff
   -> IO LBS.ByteString -- ^ action that returns a string
   -> TestTree
 goldenVsStringDiff name cmdf ref act =
+  askOption $ \sizeCutoff ->
   goldenTest
     name
     (readFileStrict ref)
     (act)
-    cmp
+    (cmp sizeCutoff)
     upd
   where
   template = takeFileName ref <.> "actual"
-  cmp _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
+  cmp sizeCutoff _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
 
     -- Write act output to temporary ("new") file
     LBS.hPut tmpHandle actBS >> hFlush tmpHandle
@@ -186,9 +194,20 @@ goldenVsStringDiff name cmdf ref act =
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n%s" ref (show cmd) (LBS.unpack out))
+      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n" ref (show cmd) <> LBS.unpack (truncateLargeOutput sizeCutoff out))
 
   upd = createDirectoriesAndWriteFile ref
+
+truncateLargeOutput
+  :: SizeCutoff
+  -> LBS.ByteString
+  -> LBS.ByteString
+truncateLargeOutput (SizeCutoff n) str =
+  if LBS.length str <= n
+    then str
+    else
+      LBS.take n str <> "<truncated>" <>
+      "\nUse --accept or increase --size-cutoff to see full output."
 
 -- | Like 'writeFile', but uses binary mode.
 writeBinaryFile :: FilePath -> String -> IO ()
