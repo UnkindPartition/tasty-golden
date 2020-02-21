@@ -178,7 +178,7 @@ goldenVsStringDiff name cmdf ref act =
     (cmp sizeCutoff)
     upd
   where
-  template = takeFileName ref <.> "actual"
+  template = takeBaseName ref <.> "actual"
   cmp sizeCutoff _ actBS = withSystemTempFile template $ \tmpFile tmpHandle -> do
 
     -- Write act output to temporary ("new") file
