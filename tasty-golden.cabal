@@ -21,7 +21,11 @@ maintainer:          Roman Cheplyaka <roma@ro-che.info>
 category:            Testing
 build-type:          Simple
 cabal-version:       >=1.14
-extra-source-files:  CHANGELOG.md
+extra-source-files:
+  CHANGELOG.md
+  example/golden/fail/*.golden
+  example/golden/success/*.golden
+  tests/golden/*.golden
 Tested-With:
   GHC ==8.0.2 ||
       ==8.2.2 ||
@@ -70,13 +74,15 @@ Test-suite test
     test.hs
   Build-depends:
       base >= 4 && < 5
-    , tasty
+    , tasty >= 1.2
     , tasty-hunit
     , tasty-golden
     , filepath
     , directory
     , process
     , temporary
+  if (flag(build-example))
+    cpp-options: -DBUILD_EXAMPLE
 
 flag build-example
   default: False

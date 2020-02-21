@@ -1,0 +1,17 @@
+Tests
+  Successful tests
+    goldenVsFile:       OK
+    goldenVsFileDiff:   OK
+    goldenVsString:     OK
+    goldenVsStringDiff: OK
+  Failing tests
+    goldenVsFile:       OK
+      Accepted the new version
+    goldenVsFileDiff:   OK
+      Accepted the new version
+    goldenVsString:     OK
+      Accepted the new version
+    goldenVsStringDiff: OK
+      Accepted the new version
+
+All 8 tests passed

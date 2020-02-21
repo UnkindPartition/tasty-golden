@@ -1,0 +1,120 @@
+Tests
+  Successful tests
+    goldenVsFile:       OK
+    goldenVsFileDiff:   OK
+    goldenVsString:     OK
+    goldenVsStringDiff: OK
+  Failing tests
+    goldenVsFile:       FAIL
+      Files 'example/golden/fail/goldenVsFile.golden' and 'example/golden/fail/goldenVsFile.actual' differ
+    goldenVsFileDiff:   FAIL
+      1d0
+      < 1
+      4d2
+      < 4
+      9d6
+      < 9
+      16d12
+      < 16
+      25d20
+      < 25
+      36d30
+      < 36
+      49d42
+      < 49
+      64d56
+      < 64
+      81d72
+      < 81
+      100d90
+      < 100
+      121d110
+      < 121
+      144d132
+      < 144
+      169d156
+      <<truncated>
+      Use --accept or increase --size-cutoff to see full output.
+    goldenVsString:     FAIL
+      Test output was different from 'example/golden/fail/goldenVsString.golden'. It was:
+      2
+      3
+      5
+      6
+      7
+      8
+      10
+      11
+      12
+      13
+      14
+      15
+      17
+      18
+      19
+      20
+      21
+      22
+      23
+      24
+      26
+      27
+      28
+      29
+      30
+      31
+      32
+      33
+      34
+      35
+      37
+      38
+      39
+      40
+      41
+      42
+      43
+      44
+      45
+      46
+      47
+      48
+      50
+      51
+      52
+      53
+      54
+      55
+      56<truncated>
+      Use --accept or increase --size-cutoff to see full output.
+    goldenVsStringDiff: FAIL
+      Test output was different from 'example/golden/fail/goldenVsStringDiff.golden'. Output of ["diff","example/golden/fail/goldenVsStringDiff.golden","/tmp/goldenVsStringDiff.actual"]:
+      1d0
+      < 1
+      4d2
+      < 4
+      9d6
+      < 9
+      16d12
+      < 16
+      25d20
+      < 25
+      36d30
+      < 36
+      49d42
+      < 49
+      64d56
+      < 64
+      81d72
+      < 81
+      100d90
+      < 100
+      121d110
+      < 121
+      144d132
+      < 144
+      169d156
+      <<truncated>
+      Use --accept or increase --size-cutoff to see full output.
+
+4 out of 8 tests failed

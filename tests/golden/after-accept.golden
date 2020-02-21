@@ -1,0 +1,13 @@
+Tests
+  Successful tests
+    goldenVsFile:       OK
+    goldenVsFileDiff:   OK
+    goldenVsString:     OK
+    goldenVsStringDiff: OK
+  Failing tests
+    goldenVsFile:       OK
+    goldenVsFileDiff:   OK
+    goldenVsString:     OK
+    goldenVsStringDiff: OK
+
+All 8 tests passed
