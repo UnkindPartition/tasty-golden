@@ -100,8 +100,8 @@ install:
   - ${CABAL} v2-freeze $WITHCOMPILER ${TEST} ${BENCH}
   - "cat cabal.project.freeze | sed -E 's/^(constraints: *| *)//' | sed 's/any.//'"
   - rm  cabal.project.freeze
-  - ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} --dep -j2 all
-  - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --dep -j2 all
+  - ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} --dep -j2 -fbuild-example all
+  - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --dep -fbuild-example -j2 all
 script:
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   # Packaging...
@@ -125,10 +125,16 @@ script:
   # this builds all libraries and executables (without tests/benchmarks)
   - ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks all
   # Building with tests and benchmarks...
-  # build & run tests, build benchmarks
-  - ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} all
+
+  # Test both with and without -fbuild-example,
+  # since there is some CPP in test.hs around that.
+  - |
+    for build_example in -f-build-example -fbuild-example; do
+      echo "Testing with ${build_example}"
+      ${CABAL} v2-install $WITHCOMPILER "${build_example}" all
+      ${CABAL} v2-test $WITHCOMPILER "${build_example}" ${TEST} ${BENCH} all
+    done
   # Testing...
-  - ${CABAL} v2-test $WITHCOMPILER ${TEST} ${BENCH} all
   # cabal check...
   - (cd ${PKGDIR_tasty_golden} && ${CABAL} -vnormal check)
   # haddock...
