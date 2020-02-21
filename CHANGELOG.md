@@ -1,6 +1,13 @@
 Changes
 =======
 
+Version 2.3.3
+-------------
+
+* Expose `createDirectoriesAndWriteFile`
+* Add `--size-cutoff` to truncate large golden test output
+* Restore support for GHC >= 7.8
+
 Version 2.3.2.1
 ---------------
 
