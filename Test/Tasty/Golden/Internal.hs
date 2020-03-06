@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes, ExistentialQuantification, DeriveDataTypeable,
-    MultiParamTypeClasses, GeneralizedNewtypeDeriving #-}
+    MultiParamTypeClasses, GeneralizedNewtypeDeriving, CPP #-}
 module Test.Tasty.Golden.Internal where
 
 import Control.DeepSeq
@@ -8,9 +8,12 @@ import Data.Typeable (Typeable)
 import Data.Proxy
 import Data.Int
 import System.IO.Error (isDoesNotExistError)
-import Options.Applicative (metavar)
+import Options.Applicative (metavar, showDefaultWith, value)
 import Test.Tasty.Providers
 import Test.Tasty.Options
+#if !MIN_VERSION_base(4,11,0)
+import Data.Monoid ((<>))
+#endif
 
 -- | See 'goldenTest' for explanation of the fields
 data Golden =
@@ -49,14 +52,17 @@ instance IsOption NoCreateFile where
 -- for readability.
 --
 -- The default value is 1000 (i.e. 1Kb).
-newtype SizeCutoff = SizeCutoff Int64
+newtype SizeCutoff = SizeCutoff { getSizeCutoff :: Int64 }
   deriving (Eq, Ord, Typeable, Num, Real, Enum, Integral)
 instance IsOption SizeCutoff where
   defaultValue = 1000
   parseValue = fmap SizeCutoff . safeRead . filter (/= '_')
   optionName = return "size-cutoff"
   optionHelp = return "hide golden test output if it's larger than n bytes"
-  optionCLParser = mkOptionCLParser $ metavar "n"
+  optionCLParser = mkOptionCLParser $
+    metavar "n" <>
+    value defaultValue <>
+    showDefaultWith (show . getSizeCutoff)
 
 instance IsTest Golden where
   run opts golden _ = runGolden golden opts
