@@ -63,7 +63,8 @@ library
     deepseq,
     containers,
     directory,
-    async
+    async,
+    text
 
 Test-suite test
   Default-language:

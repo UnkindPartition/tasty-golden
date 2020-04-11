@@ -62,8 +62,10 @@ import Test.Tasty
 import Test.Tasty.Golden.Advanced
 import Test.Tasty.Golden.Internal
 import Text.Printf
-import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.ByteString.Lazy as LBS
 import Data.Monoid
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LT
 import System.IO
 import System.IO.Temp
 import System.Process
@@ -111,7 +113,7 @@ goldenVsString name ref act =
   cmp sizeCutoff x y = simpleCmp msg x y
     where
     msg = printf "Test output was different from '%s'. It was:\n" ref <>
-      LBS.unpack (truncateLargeOutput sizeCutoff y)
+      unpackUtf8 (truncateLargeOutput sizeCutoff y)
   upd = createDirectoriesAndWriteFile ref
 
 simpleCmp :: Eq a => String -> a -> a -> IO (Maybe String)
@@ -152,7 +154,7 @@ goldenVsFileDiff name cmdf ref new act =
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just . LBS.unpack . truncateLargeOutput sizeCutoff $ out
+      _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
 
   upd _ = readFileStrict new >>= createDirectoriesAndWriteFile ref
 
@@ -195,7 +197,7 @@ goldenVsStringDiff name cmdf ref act =
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
-      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n" ref (show cmd) <> LBS.unpack (truncateLargeOutput sizeCutoff out))
+      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n" ref (show cmd) <> unpackUtf8 (truncateLargeOutput sizeCutoff out))
 
   upd = createDirectoriesAndWriteFile ref
 
@@ -288,3 +290,6 @@ hGetContentsStrict h = do
   s <- LBS.hGetContents h
   evaluate $ forceLbs s
   return s
+
+unpackUtf8 :: LBS.ByteString -> String
+unpackUtf8 = LT.unpack . LT.decodeUtf8
