@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.3.1
+---------------
+
+* Fix a bug with UTF-8 output
+
 Version 2.3.3
 -------------
 
