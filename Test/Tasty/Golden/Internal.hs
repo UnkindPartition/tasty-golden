@@ -8,7 +8,7 @@ import Data.Typeable (Typeable)
 import Data.Proxy
 import Data.Int
 import System.IO.Error (isDoesNotExistError)
-import Options.Applicative (metavar, showDefaultWith, value)
+import Options.Applicative (metavar)
 import Test.Tasty.Providers
 import Test.Tasty.Options
 #if !MIN_VERSION_base(4,11,0)
@@ -58,11 +58,8 @@ instance IsOption SizeCutoff where
   defaultValue = 1000
   parseValue = fmap SizeCutoff . safeRead . filter (/= '_')
   optionName = return "size-cutoff"
-  optionHelp = return "hide golden test output if it's larger than n bytes"
-  optionCLParser = mkOptionCLParser $
-    metavar "n" <>
-    value defaultValue <>
-    showDefaultWith (show . getSizeCutoff)
+  optionHelp = return "hide golden test output if it's larger than n bytes (default: 1000)"
+  optionCLParser = mkOptionCLParser $ metavar "n"
 
 instance IsTest Golden where
   run opts golden _ = runGolden golden opts
