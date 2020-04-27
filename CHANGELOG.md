@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.3.2
+---------------
+
+* Fix a bug where the `TASTY_SIZE_CUTOFF` env. variable would be ignored
+
 Version 2.3.3.1
 ---------------
 
