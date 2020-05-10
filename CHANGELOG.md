@@ -1,6 +1,11 @@
 Changes
 =======
 
+Version 2.3.3.3
+---------------
+
+* Fix a bug where `goldenVsFileDiff` would not create a missing golden file
+
 Version 2.3.3.2
 ---------------
 
