@@ -56,9 +56,10 @@ newtype SizeCutoff = SizeCutoff { getSizeCutoff :: Int64 }
   deriving (Eq, Ord, Typeable, Num, Real, Enum, Integral)
 instance IsOption SizeCutoff where
   defaultValue = 1000
+  showDefaultValue = Just . show . getSizeCutoff
   parseValue = fmap SizeCutoff . safeRead . filter (/= '_')
   optionName = return "size-cutoff"
-  optionHelp = return "hide golden test output if it's larger than n bytes (default: 1000)"
+  optionHelp = return "hide golden test output if it's larger than n bytes"
   optionCLParser = mkOptionCLParser $ metavar "n"
 
 instance IsTest Golden where
