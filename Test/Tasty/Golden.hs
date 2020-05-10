@@ -72,6 +72,7 @@ import System.Process
 import System.Exit
 import System.FilePath
 import System.Directory
+import System.PosixCompat.Files
 import Control.Exception
 import Control.Monad
 import qualified Data.Set as Set
@@ -138,7 +139,11 @@ goldenVsFileDiff name cmdf ref new act =
   askOption $ \sizeCutoff ->
   goldenTest
     name
-    (return ())
+    (getFileStatus ref >> return ())
+        -- Use getFileStatus to check if the golden file exists. If the file
+        -- doesn't exist, getFileStatus will throw an isDoesNotExistError that
+        -- runGolden will handle by creating the golden file before proceeding.
+        -- See #32.
     act
     (cmp sizeCutoff)
     upd

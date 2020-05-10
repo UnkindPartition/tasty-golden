@@ -64,7 +64,8 @@ library
     containers,
     directory,
     async,
-    text
+    text,
+    unix-compat
 
 Test-suite test
   Default-language:
