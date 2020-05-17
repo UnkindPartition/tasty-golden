@@ -4,9 +4,11 @@ module Test.Tasty.Golden.Internal where
 
 import Control.DeepSeq
 import Control.Exception
+import Control.Monad (when)
 import Data.Typeable (Typeable)
 import Data.Proxy
 import Data.Int
+import Data.Char (toLower)
 import System.IO.Error (isDoesNotExistError)
 import Options.Applicative (metavar)
 import Test.Tasty.Providers
@@ -23,6 +25,7 @@ data Golden =
       (IO a)
       (a -> a -> IO (Maybe String))
       (a -> IO ())
+      (IO ())
   deriving Typeable
 
 -- | This option, when set to 'True', specifies that we should run in the
@@ -62,6 +65,44 @@ instance IsOption SizeCutoff where
   optionHelp = return "hide golden test output if it's larger than n bytes"
   optionCLParser = mkOptionCLParser $ metavar "n"
 
+-- | When / whether to delete the test output file,
+-- when there is a golden file
+data DeleteOutputFile
+  = Never  -- ^ Never delete the output file (default)
+  | OnPass -- ^ Delete the output file if the test passes
+  | OnFail -- ^ Ditto, if the test fails.  (Seems unlikely to be commonly 
+           --   used, but provided for completeness.)
+  | Always -- ^ Always delete the output file. (May not be commonly used,
+           --   but provided for completeness.)
+  deriving (Eq, Ord, Typeable, Show)
+
+-- | This option controls when / whether the test output file is deleted
+-- For example, it may be convenient to delete the output file when a test
+-- passes, since it will be the same as the golden file.
+--
+-- It does nothing if
+-- * running the test or accessing an existing golden value threw an exception.
+-- * there is no golden file for the test
+instance IsOption DeleteOutputFile where
+  defaultValue = Never
+  parseValue = parseDeleteOutputFile
+  optionName = return "delete-output"
+  optionHelp = return "If there is a golden file, when to delete output files"
+  showDefaultValue =  Just . displayDeleteOutputFile
+  optionCLParser = mkOptionCLParser $ metavar "never|onpass|onfail|always"
+
+parseDeleteOutputFile :: String -> Maybe DeleteOutputFile
+parseDeleteOutputFile s =
+  case map toLower s of
+    "never"  -> Just Never
+    "onpass" -> Just OnPass
+    "onfail" -> Just OnFail
+    "always" -> Just Always
+    _        -> Nothing
+
+displayDeleteOutputFile :: DeleteOutputFile -> String
+displayDeleteOutputFile dof = map toLower (show dof)
+
 instance IsTest Golden where
   run opts golden _ = runGolden golden opts
   testOptions =
@@ -69,11 +110,12 @@ instance IsTest Golden where
       [ Option (Proxy :: Proxy AcceptTests)
       , Option (Proxy :: Proxy NoCreateFile)
       , Option (Proxy :: Proxy SizeCutoff)
+      , Option (Proxy :: Proxy DeleteOutputFile)
       ]
 
 runGolden :: Golden -> OptionSet -> IO Result
-runGolden (Golden getGolden getTested cmp update) opts = do
-  do
+runGolden (Golden getGolden getTested cmp update delete) opts = do
+
     mbNew <- try getTested
 
     case mbNew of
@@ -86,9 +128,13 @@ runGolden (Golden getGolden getTested cmp update) opts = do
         case mbRef of
           Left e | isDoesNotExistError e ->
             if noCreate
-              then return $ testFailed "Golden file does not exist; --no-create flag specified"
+              then
+                -- Don't ever delete the output file in this case, as there is
+                -- no duplicate golden file
+                return $ testFailed "Golden file does not exist; --no-create flag specified"
               else do
                 update new
+                when (delOut `elem` [Always, OnPass]) delete
                 return $ testPassed "Golden file did not exist; created"
 
             | otherwise -> throwIO e
@@ -101,16 +147,20 @@ runGolden (Golden getGolden getTested cmp update) opts = do
               Just _reason | accept -> do
                 -- test failed; accept the new version
                 update new
+                when (delOut `elem` [Always, OnPass]) delete
                 return $ testPassed "Accepted the new version"
 
               Just reason -> do
                 -- Make sure that the result is fully evaluated and doesn't depend
                 -- on yet un-read lazy input
                 evaluate . rnf $ reason
+                when (delOut `elem` [Always, OnFail]) delete
                 return $ testFailed reason
 
-              Nothing ->
+              Nothing -> do
+                when (delOut `elem` [Always, OnPass]) delete
                 return $ testPassed ""
   where
     AcceptTests accept = lookupOption opts
     NoCreateFile noCreate = lookupOption opts
+    delOut = lookupOption opts

@@ -86,15 +86,17 @@ goldenVsFile
   -> IO () -- ^ action that creates the output file
   -> TestTree -- ^ the test verifies that the output file contents is the same as the golden file contents
 goldenVsFile name ref new act =
-  goldenTest
+  goldenTest2
     name
     (readFileStrict ref)
     (act >> readFileStrict new)
     cmp
     upd
+    del
   where
   cmp = simpleCmp $ printf "Files '%s' and '%s' differ" ref new
   upd = createDirectoriesAndWriteFile ref
+  del = removeFile new
 
 -- | Compare a given string against the golden file's contents.
 goldenVsString
@@ -137,7 +139,7 @@ goldenVsFileDiff
   -> TestTree
 goldenVsFileDiff name cmdf ref new act =
   askOption $ \sizeCutoff ->
-  goldenTest
+  goldenTest2
     name
     (getFileStatus ref >> return ())
         -- Use getFileStatus to check if the golden file exists. If the file
@@ -147,6 +149,7 @@ goldenVsFileDiff name cmdf ref new act =
     act
     (cmp sizeCutoff)
     upd
+    del
   where
   cmd = cmdf ref new
   cmp sizeCutoff _ _
@@ -162,6 +165,7 @@ goldenVsFileDiff name cmdf ref new act =
       _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
 
   upd _ = readFileStrict new >>= createDirectoriesAndWriteFile ref
+  del = removeFile new
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 goldenVsStringDiff

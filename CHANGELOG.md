@@ -1,6 +1,9 @@
 Changes
 =======
 
+* Add an option to remove the output file after a test has run, if there is
+  a golden file, or one has been created
+
 Version 2.3.3.3
 ---------------
 
