@@ -70,8 +70,6 @@ instance IsOption SizeCutoff where
 data DeleteOutputFile
   = Never  -- ^ Never delete the output file (default)
   | OnPass -- ^ Delete the output file if the test passes
-  | OnFail -- ^ Ditto, if the test fails.  (Seems unlikely to be commonly 
-           --   used, but provided for completeness.)
   | Always -- ^ Always delete the output file. (May not be commonly used,
            --   but provided for completeness.)
   deriving (Eq, Ord, Typeable, Show)
@@ -89,14 +87,13 @@ instance IsOption DeleteOutputFile where
   optionName = return "delete-output"
   optionHelp = return "If there is a golden file, when to delete output files"
   showDefaultValue =  Just . displayDeleteOutputFile
-  optionCLParser = mkOptionCLParser $ metavar "never|onpass|onfail|always"
+  optionCLParser = mkOptionCLParser $ metavar "never|onpass|always"
 
 parseDeleteOutputFile :: String -> Maybe DeleteOutputFile
 parseDeleteOutputFile s =
   case map toLower s of
     "never"  -> Just Never
     "onpass" -> Just OnPass
-    "onfail" -> Just OnFail
     "always" -> Just Always
     _        -> Nothing
 
@@ -154,7 +151,6 @@ runGolden (Golden getGolden getTested cmp update delete) opts = do
                 -- Make sure that the result is fully evaluated and doesn't depend
                 -- on yet un-read lazy input
                 evaluate . rnf $ reason
-                when (delOut `elem` [Always, OnFail]) delete
                 return $ testFailed reason
 
               Nothing -> do
