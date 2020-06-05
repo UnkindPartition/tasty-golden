@@ -151,6 +151,7 @@ runGolden (Golden getGolden getTested cmp update delete) opts = do
                 -- Make sure that the result is fully evaluated and doesn't depend
                 -- on yet un-read lazy input
                 evaluate . rnf $ reason
+                when (delOut == Always) delete
                 return $ testFailed reason
 
               Nothing -> do
