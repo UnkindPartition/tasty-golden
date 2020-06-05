@@ -67,6 +67,8 @@ instance IsOption SizeCutoff where
 
 -- | When / whether to delete the test output file,
 -- when there is a golden file
+--
+-- @since 2.3.4
 data DeleteOutputFile
   = Never  -- ^ Never delete the output file (default)
   | OnPass -- ^ Delete the output file if the test passes

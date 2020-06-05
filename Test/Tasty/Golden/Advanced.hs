@@ -38,6 +38,8 @@ goldenTest t golden test cmp upd = singleTest t $ Golden golden test cmp upd (re
 -- | A variant of 'goldenTest' that also provides for deleting the output
 -- file. The 'Internal.DeleteOuputFile' option controls the circumstances in which
 -- the output file is to be deleted.
+--
+-- @since 2.3.4
 goldenTest2
   :: TestName -- ^ Test name
   -> IO a

@@ -1,6 +1,9 @@
 Changes
 =======
 
+Version 2.3.4
+-------------
+
 * Add an option to remove the output file after a test has run, if there is
   a golden file, or one has been created
 
