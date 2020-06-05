@@ -47,11 +47,16 @@ as binary does the job.
 
 {-# LANGUAGE OverloadedStrings #-}
 module Test.Tasty.Golden
-  ( goldenVsFile
+  (
+    -- * Functions to create a golden test
+    goldenVsFile
   , goldenVsString
   , goldenVsFileDiff
   , goldenVsStringDiff
+    -- * Options
   , SizeCutoff(..)
+  , DeleteOutputFile(..)
+    -- * Various utilities
   , writeBinaryFile
   , findByExtension
   , createDirectoriesAndWriteFile
@@ -221,7 +226,8 @@ truncateLargeOutput (SizeCutoff n) str =
       LBS.take n str <> "<truncated>" <>
       "\nUse --accept or increase --size-cutoff to see full output."
 
--- | Like 'writeFile', but uses binary mode.
+-- | Like 'writeFile', but uses binary mode. (Needed only when you work
+-- with 'String'.)
 writeBinaryFile :: FilePath -> String -> IO ()
 writeBinaryFile f txt = withBinaryFile f WriteMode (\hdl -> hPutStr hdl txt)
 
@@ -266,7 +272,7 @@ findByExtension extsList = go where
               then [path]
               else []
 
--- | Like 'BS.writeFile', but also create parent directories if they are
+-- | Like 'LBS.writeFile', but also create parent directories if they are
 -- missing.
 createDirectoriesAndWriteFile
   :: FilePath

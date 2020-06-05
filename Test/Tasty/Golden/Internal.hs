@@ -79,7 +79,9 @@ data DeleteOutputFile
 -- passes, since it will be the same as the golden file.
 --
 -- It does nothing if
+--
 -- * running the test or accessing an existing golden value threw an exception.
+--
 -- * there is no golden file for the test
 instance IsOption DeleteOutputFile where
   defaultValue = Never
