@@ -55,6 +55,8 @@ instance IsOption NoCreateFile where
 -- for readability.
 --
 -- The default value is 1000 (i.e. 1Kb).
+--
+-- @since 2.3.3
 newtype SizeCutoff = SizeCutoff { getSizeCutoff :: Int64 }
   deriving (Eq, Ord, Typeable, Num, Real, Enum, Integral)
 instance IsOption SizeCutoff where
