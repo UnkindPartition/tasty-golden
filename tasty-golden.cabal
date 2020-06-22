@@ -87,6 +87,7 @@ Test-suite test
     , temporary
   if (flag(build-example))
     cpp-options: -DBUILD_EXAMPLE
+  Ghc-options: -threaded
 
 flag build-example
   default: False
@@ -112,3 +113,4 @@ executable example
     , bytestring
     , tasty
     , tasty-golden
+  Ghc-options: -threaded
