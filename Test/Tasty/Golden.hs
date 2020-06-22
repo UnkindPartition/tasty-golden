@@ -1,18 +1,22 @@
 {- |
+= Getting Started
 To get started with golden testing and this library, see
 <https://ro-che.info/articles/2017-12-04-golden-tests Introduction to golden testing>.
 
 This module provides a simplified interface. If you want more, see
 "Test.Tasty.Golden.Advanced".
 
-Note about filenames. They are looked up in the usual way, thus relative
+== Filenames
+Filenames are looked up in the usual way, Thus relative
 names are relative to the processes current working directory.
 It is common to run tests from the package's root directory (via @cabal
 test@ or @cabal install --enable-tests@), so if your test files are under
 the @tests\/@ subdirectory, your relative file names should start with
 @tests\/@ (even if your @test.hs@ is itself under @tests\/@, too).
 
-Note about line endings. The best way to avoid headaches with line endings
+== Line endings
+
+The best way to avoid headaches with line endings
 (when running tests both on UNIX and Windows) is to treat your golden files
 as binary, even when they are actually textual.
 
@@ -43,6 +47,18 @@ tests will be broken.
 As a last resort, you can strip all @\\r@s from both arguments in your
 comparison function when necessary. But most of the time treating the files
 as binary does the job.
+
+== Linking
+The test harness exectutable into which you import this library
+should be compiled with @-threaded@ if you want to avoid blocking any other
+threads while 'Test.Tasty.Golden' waits for the result of the diff command
+that you specify when using 'goldenVsFileDiff' or 'goldenVsStringDiff'.
+
+== Windows limitations
+When using 'goldenVsFileDiff' or 'goldenVsStringDiff' under Windows the exit
+code from the diff program that you specify will not be captured correctly
+if that program uses @exec@. You may need to use a simpler diff program in
+this case.  See 'System.Process' for further details.
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -129,6 +145,14 @@ simpleCmp e x y =
   return $ if x == y then Nothing else Just e
 
 -- | Same as 'goldenVsFile', but invokes an external diff command.
+--
+-- GHC Note: to use this function without blocking other threads while
+-- the diff command is being run, you should compile the test harness
+-- program into which you are importing this library with @-threaded@.
+--
+-- GHC Note: on Windows, if the command that you use to produce diffs uses @exec@,
+-- its exit code cannot be captured reliably. This can lead to
+-- inconsistent results when using other than a simple diff program.
 goldenVsFileDiff
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
@@ -160,11 +184,25 @@ goldenVsFileDiff name cmdf ref new act =
   cmp sizeCutoff _ _
     | null cmd = error "goldenVsFileDiff: empty command line"
     | otherwise = do
-    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
+    -- On Windowss use_process_jobs indicates that we should wait for
+    -- the entire process tree to finish before unblocking.
+    -- On POSIX systems the flag is ignored.
+    (_, Just sout, _, pid) <- createProcess
+                                (proc (head cmd) (tail cmd))
+                                { std_out = CreatePipe,
+                                  use_process_jobs = True }
+
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
 
-    r <- waitForProcess pid
+    -- GHC Note: on Windows, the exit code returned by @waitForProcess@ cannot
+    -- be relied upon when the child uses @exec@. Instead it returns the
+    -- exit code of the *original child* (which always exits with code 0,
+    -- since it called @exec@), not the exit code of the process which carried
+    -- on with execution after @exec@. This is different from the behavior
+    -- prescribed by POSIX but is the best approximation that can be
+    -- realised under the restrictions of the Windows process model.
+    r <- waitForProcess pid -- will block other threads unless @main@ is compiled with @-threaded@
     return $ case r of
       ExitSuccess -> Nothing
       _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
@@ -173,6 +211,14 @@ goldenVsFileDiff name cmdf ref new act =
   del = removeFile new
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
+--
+-- GHC Note: to use this function without blocking other threads while
+-- the diff command is being run, you should compile the test harness
+-- program into which you are importing this library with @-threaded@.
+--
+-- GHC Note: on Windows, if the command that you use to produce diffs uses @exec@,
+-- its exit code cannot be captured reliably. This can lead to
+-- inconsistent results when using other than a simple diff program.
 goldenVsStringDiff
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
@@ -204,10 +250,16 @@ goldenVsStringDiff name cmdf ref act =
 
     when (null cmd) $ error "goldenVsFileDiff: empty command line"
 
-    (_, Just sout, _, pid) <- createProcess (proc (head cmd) (tail cmd)) { std_out = CreatePipe }
+    (_, Just sout, _, pid) <- createProcess
+                                (proc (head cmd) (tail cmd))
+                                { std_out = CreatePipe,
+                                  use_process_jobs = True } -- see goldenVsFileDiff
+
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
 
+    -- Will block other threads unless @main@ is compiled with @-threaded@.
+    -- See also notes in goldenVsFileDiff above on limitations under Windows
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
