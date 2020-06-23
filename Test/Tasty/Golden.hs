@@ -55,12 +55,33 @@ threads while 'Test.Tasty.Golden' waits for the result of the diff command
 that you specify when using 'goldenVsFileDiff' or 'goldenVsStringDiff'.
 
 == Windows limitations
+=== For versions of @process@ >= 1.6.8 (included since ghc 8.8.3)
 When using 'goldenVsFileDiff' or 'goldenVsStringDiff' under Windows the exit
 code from the diff program that you specify will not be captured correctly
-if that program uses @exec@. You may need to use a simpler diff program in
-this case.  See 'System.Process' for further details.
+if that program uses @exec@. 
+
+More specifically, you will get the exit code of the *original child*
+(which always exits with code 0, since it called @exec@), not the exit
+code of the process which carried on with execution after @exec@.
+This is different from the behavior prescribed by POSIX but is the best
+approximation that can be realised under the restrictions of the
+Windows process model.  See 'System.Process' for further details or
+<https://github.com/haskell/process/pull/168> for even more.
+
+=== For versions of @process before 1.6.8.0
+Earlier versions of @process@ may produce even less reliable results
+if the diff command uses @exec@. (Eg, the test harness may not wait
+for all the child processes of the diff command to complete.)
+<https://github.com/haskell/process/pull/80> has more details.
+
+=== Workarounds
+Use a simple diff program such as GNU DiffUtils for Windows or you
+may even be able to use @git diff@ with appropriate parameters.
+Alternatively, you can fall back to using goldenVsFile.
+
 -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Test.Tasty.Golden
   (
@@ -184,13 +205,21 @@ goldenVsFileDiff name cmdf ref new act =
   cmp sizeCutoff _ _
     | null cmd = error "goldenVsFileDiff: empty command line"
     | otherwise = do
-    -- On Windowss use_process_jobs indicates that we should wait for
-    -- the entire process tree to finish before unblocking.
-    -- On POSIX systems the flag is ignored.
     (_, Just sout, _, pid) <- createProcess
                                 (proc (head cmd) (tail cmd))
-                                { std_out = CreatePipe,
-                                  use_process_jobs = True }
+                                {  std_out = CreatePipe
+#ifdef MIN_VERSION_process
+#if MIN_VERSION_process(1,6,8)
+-- On Windows use_process_jobs indicates that we should wait for
+-- the entire process tree to finish before unblocking.
+-- On POSIX systems the flag is ignored.
+--
+-- Unfortunately the process job support is unreliable in @process@ releases
+-- prior to 1.6.8, so we disable it in these versions.
+                                  , use_process_jobs = True
+#endif
+#endif
+                                }
 
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
@@ -252,9 +281,15 @@ goldenVsStringDiff name cmdf ref act =
 
     (_, Just sout, _, pid) <- createProcess
                                 (proc (head cmd) (tail cmd))
-                                { std_out = CreatePipe,
-                                  use_process_jobs = True } -- see goldenVsFileDiff
-
+                                { std_out = CreatePipe
+#ifdef MIN_VERSION_process
+#if MIN_VERSION_process(1,6,8)
+-- See goldenVsFileDiff
+                                  , use_process_jobs = True
+#endif
+#endif
+                                }
+ 
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
 
