@@ -207,17 +207,15 @@ goldenVsFileDiff name cmdf ref new act =
     | otherwise = do
     (_, Just sout, _, pid) <- createProcess
                                 (proc (head cmd) (tail cmd))
-                                {  std_out = CreatePipe
-#ifdef MIN_VERSION_process
+                                {   std_out = CreatePipe
 #if MIN_VERSION_process(1,6,8)
 -- On Windows use_process_jobs indicates that we should wait for
 -- the entire process tree to finish before unblocking.
 -- On POSIX systems the flag is ignored.
 --
--- Unfortunately the process job support is unreliable in @process@ releases
+-- Unfortunately process job support is unreliable in @process@ releases
 -- prior to 1.6.8, so we disable it in these versions.
                                   , use_process_jobs = True
-#endif
 #endif
                                 }
 
@@ -281,12 +279,10 @@ goldenVsStringDiff name cmdf ref act =
 
     (_, Just sout, _, pid) <- createProcess
                                 (proc (head cmd) (tail cmd))
-                                { std_out = CreatePipe
-#ifdef MIN_VERSION_process
+                                {   std_out = CreatePipe
 #if MIN_VERSION_process(1,6,8)
 -- See goldenVsFileDiff
                                   , use_process_jobs = True
-#endif
 #endif
                                 }
  
