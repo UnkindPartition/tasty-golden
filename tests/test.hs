@@ -71,7 +71,7 @@ main = defaultMain $ testGroup "Tests"
     (do
       tmp0 <- getCanonicalTemporaryDirectory
       tmp <- createTempDirectory tmp0 "golden-test"
-      callProcess "cp" ["-r", "example", tmp]
+      runProcess_ $ shell $ "cp -r example " ++ tmp
       return tmp
     )
     ({-removeDirectoryRecursive-}const $ return ()) $ \tmpIO ->
@@ -89,8 +89,7 @@ main = defaultMain $ testGroup "Tests"
           -- timings.
           --
           -- NB: cannot use multiline literals because of CPP.
-          let cmd = setWorkingDir tmp
-                  $ shell "example | " ++
+          let cmd = shell ("cd " ++ tmp ++ " && example | " ++
                       "sed -Ee 's/[[:digit:]-]+\\.actual/.actual/g; s/ \\([[:digit:].]+s\\)//' > " ++
                       our</>"tests/golden/before-accept.actual || true")
           runProcess_ cmd
@@ -103,8 +102,7 @@ main = defaultMain $ testGroup "Tests"
         (do
           tmp <- tmpIO
           our <- getCurrentDirectory
-          let cmd = setWorkingDir tmp
-                  $ shell "example --accept | sed -Ee 's/ \\([[:digit:].]+s\\)//' > " ++
+          let cmd = shell ("cd " ++ tmp ++ " && example --accept | sed -Ee 's/ \\([[:digit:].]+s\\)//' > " ++
                           our </>"tests/golden/with-accept.actual")
           runProcess_ cmd
         )
@@ -116,8 +114,7 @@ main = defaultMain $ testGroup "Tests"
         (do
           tmp <- tmpIO
           our <- getCurrentDirectory
-          let cmd = setWorkingDir tmp
-                  $ shell "example | sed -Ee 's/ \\([[:digit:].]+s\\)//' > " ++
+          let cmd = shell ("cd " ++ tmp ++ " && example | sed -Ee 's/ \\([[:digit:].]+s\\)//' > " ++
                           our</>"tests/golden/after-accept.actual")
           runProcess_ cmd
         )
