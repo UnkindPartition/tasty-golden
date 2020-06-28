@@ -4,6 +4,45 @@
 To get started with golden testing and this library, see
 <https://ro-che.info/articles/2017-12-04-golden-tests Introduction to golden testing>.
 
+To see the currently available test suite command line parameters run
+@cabal test --test-option=--help --test-show-details=streaming@.
+This will produce output containing something like
+
+@
+Usage: package-test [-p|--pattern PATTERN] [-t|--timeout DURATION] 
+                    [-l|--list-tests] [-j|--num-threads NUMBER] [-q|--quiet] 
+                    [--hide-successes] [--color never|always|auto] 
+                    [--ansi-tricks ARG] [--accept] [--no-create] 
+                    [--size-cutoff n] [--delete-output never|onpass|always]
+
+Available options:
+  -h,--help                Show this help text
+  -p,--pattern PATTERN     Select only tests which satisfy a pattern or awk
+                           expression
+  -t,--timeout DURATION    Timeout for individual tests (suffixes: ms,s,m,h;
+                           default: s)
+  -l,--list-tests          Do not run the tests; just print their names
+  -j,--num-threads NUMBER  Number of threads to use for tests
+                           execution (default: # of cores/capabilities)
+  -q,--quiet               Do not produce any output; indicate success only by
+                           the exit code
+  --hide-successes         Do not print tests that passed successfully
+  --color never|always|auto
+                           When to use colored output (default: auto)
+  --ansi-tricks ARG        Enable various ANSI terminal tricks. Can be set to
+                           'true' or 'false'. (default: true)
+  --accept                 Accept current results of golden tests
+  --no-create              Error when golden file does not exist
+  --size-cutoff n          hide golden test output if it's larger than n
+                           bytes (default: 1000)
+  --delete-output never|onpass|always
+                           If there is a golden file, when to delete output
+                           files (default: never)
+@
+
+(If you omit the @--test-show-details=streaming@ parameter, 
+the output will only be captured in the log file for the run.)
+
 This module provides a simplified interface. If you want more, see
 "Test.Tasty.Golden.Advanced".
 
