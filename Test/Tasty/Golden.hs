@@ -110,7 +110,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 import System.IO
 import System.IO.Temp
-import System.Process
+import System.Process.Typed
 import System.Exit
 import System.FilePath
 import System.Directory
@@ -200,25 +200,13 @@ goldenVsFileDiff name cmdf ref new act =
   cmp sizeCutoff _ _
     | null cmd = error "goldenVsFileDiff: empty command line"
     | otherwise = do
-    (_, Just sout, _, pid) <- createProcess
-                                (proc (head cmd) (tail cmd))
-                                {   std_out = CreatePipe
-#if MIN_VERSION_process(1,6,8)
--- On Windows use_process_jobs indicates that we should wait for
--- the entire process tree to finish before unblocking.
--- On POSIX systems the flag is ignored.
---
--- Unfortunately process job support is unreliable in @process@ releases
--- prior to 1.6.8, so we disable it in these versions.
-                                  , use_process_jobs = True
-#endif
-                                }
 
-    -- strictly read the whole output, so that the process can terminate
-    out <- hGetContentsStrict sout
+    let procConf = setStdin closed
+                 $ setStdout byteStringOutput
+                 $ proc (head cmd) (tail cmd)
 
-    r <- waitForProcess pid
-    return $ case r of
+    (exitCode, out, _err)  <- readProcess procConf
+    return $ case exitCode of
       ExitSuccess -> Nothing
       _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
 
@@ -260,20 +248,12 @@ goldenVsStringDiff name cmdf ref act =
 
     when (null cmd) $ error "goldenVsFileDiff: empty command line"
 
-    (_, Just sout, _, pid) <- createProcess
-                                (proc (head cmd) (tail cmd))
-                                {   std_out = CreatePipe
-#if MIN_VERSION_process(1,6,8)
--- See goldenVsFileDiff
-                                  , use_process_jobs = True
-#endif
-                                }
+    let procConf = setStdin closed
+                 $ setStdout byteStringOutput
+                 $ proc (head cmd) (tail cmd)
 
-    -- strictly read the whole output, so that the process can terminate
-    out <- hGetContentsStrict sout
-
-    r <- waitForProcess pid
-    return $ case r of
+    (exitCode, out, _err)  <- readProcess procConf
+    return $ case exitCode of
       ExitSuccess -> Nothing
       _ -> Just (printf "Test output was different from '%s'. Output of %s:\n" ref (show cmd) <> unpackUtf8 (truncateLargeOutput sizeCutoff out))
 
@@ -360,13 +340,6 @@ forceLbs = LBS.foldr seq ()
 readFileStrict :: FilePath -> IO LBS.ByteString
 readFileStrict path = do
   s <- LBS.readFile path
-  evaluate $ forceLbs s
-  return s
-
-hGetContentsStrict :: Handle -> IO LBS.ByteString
-hGetContentsStrict h = do
-  hSetBinaryMode h True
-  s <- LBS.hGetContents h
   evaluate $ forceLbs s
   return s
 
