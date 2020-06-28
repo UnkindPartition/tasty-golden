@@ -1,5 +1,6 @@
 {- |
-= Getting Started
+
+== Getting Started
 To get started with golden testing and this library, see
 <https://ro-che.info/articles/2017-12-04-golden-tests Introduction to golden testing>.
 
@@ -49,18 +50,17 @@ comparison function when necessary. But most of the time treating the files
 as binary does the job.
 
 == Linking
-The test harness exectutable into which you import this library
-should be compiled with @-threaded@ if you want to avoid blocking any other
-threads while 'Test.Tasty.Golden' waits for the result of the diff command
-that you specify when using 'goldenVsFileDiff' or 'goldenVsStringDiff'.
+The test suite should be compiled with @-threaded@ if you want to avoid
+blocking any other threads while 'goldenVsFileDiff' and similar functions
+wait for the result of the diff command.
 
 == Windows limitations
 === For versions of @process@ >= 1.6.8 (included since ghc 8.8.3)
 When using 'goldenVsFileDiff' or 'goldenVsStringDiff' under Windows the exit
 code from the diff program that you specify will not be captured correctly
-if that program uses @exec@. 
+if that program uses @exec@.
 
-More specifically, you will get the exit code of the *original child*
+More specifically, you will get the exit code of the /original child/
 (which always exits with code 0, since it called @exec@), not the exit
 code of the process which carried on with execution after @exec@.
 This is different from the behavior prescribed by POSIX but is the best
@@ -68,16 +68,16 @@ approximation that can be realised under the restrictions of the
 Windows process model.  See 'System.Process' for further details or
 <https://github.com/haskell/process/pull/168> for even more.
 
-=== For versions of @process before 1.6.8.0
+=== For versions of @process@ before 1.6.8
 Earlier versions of @process@ may produce even less reliable results
-if the diff command uses @exec@. (Eg, the test harness may not wait
+if the diff command uses @exec@. (e.g., the test harness may not wait
 for all the child processes of the diff command to complete.)
 <https://github.com/haskell/process/pull/80> has more details.
 
 === Workarounds
-Use a simple diff program such as GNU DiffUtils for Windows or you
+Use a simple diff program such as GNU DiffUtils for Windows, or you
 may even be able to use @git diff@ with appropriate parameters.
-Alternatively, you can fall back to using goldenVsFile.
+Alternatively, you can fall back to using 'goldenVsFile'.
 
 -}
 
@@ -167,13 +167,8 @@ simpleCmp e x y =
 
 -- | Same as 'goldenVsFile', but invokes an external diff command.
 --
--- GHC Note: to use this function without blocking other threads while
--- the diff command is being run, you should compile the test harness
--- program into which you are importing this library with @-threaded@.
---
--- GHC Note: on Windows, if the command that you use to produce diffs uses @exec@,
--- its exit code cannot be captured reliably. This can lead to
--- inconsistent results when using other than a simple diff program.
+-- See the notes at the top of this module regarding linking with
+-- @-threaded@ and Windows-specific issues.
 goldenVsFileDiff
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
@@ -222,14 +217,7 @@ goldenVsFileDiff name cmdf ref new act =
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
 
-    -- GHC Note: on Windows, the exit code returned by @waitForProcess@ cannot
-    -- be relied upon when the child uses @exec@. Instead it returns the
-    -- exit code of the *original child* (which always exits with code 0,
-    -- since it called @exec@), not the exit code of the process which carried
-    -- on with execution after @exec@. This is different from the behavior
-    -- prescribed by POSIX but is the best approximation that can be
-    -- realised under the restrictions of the Windows process model.
-    r <- waitForProcess pid -- will block other threads unless @main@ is compiled with @-threaded@
+    r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
       _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
@@ -239,13 +227,8 @@ goldenVsFileDiff name cmdf ref new act =
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 --
--- GHC Note: to use this function without blocking other threads while
--- the diff command is being run, you should compile the test harness
--- program into which you are importing this library with @-threaded@.
---
--- GHC Note: on Windows, if the command that you use to produce diffs uses @exec@,
--- its exit code cannot be captured reliably. This can lead to
--- inconsistent results when using other than a simple diff program.
+-- See the notes at the top of this module regarding linking with
+-- @-threaded@ and Windows-specific issues.
 goldenVsStringDiff
   :: TestName -- ^ test name
   -> (FilePath -> FilePath -> [String])
@@ -285,12 +268,10 @@ goldenVsStringDiff name cmdf ref act =
                                   , use_process_jobs = True
 #endif
                                 }
- 
+
     -- strictly read the whole output, so that the process can terminate
     out <- hGetContentsStrict sout
 
-    -- Will block other threads unless @main@ is compiled with @-threaded@.
-    -- See also notes in goldenVsFileDiff above on limitations under Windows
     r <- waitForProcess pid
     return $ case r of
       ExitSuccess -> Nothing
