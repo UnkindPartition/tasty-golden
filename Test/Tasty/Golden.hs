@@ -55,7 +55,6 @@ blocking any other threads while 'goldenVsFileDiff' and similar functions
 wait for the result of the diff command.
 
 == Windows limitations
-=== For versions of @process@ >= 1.6.8 (included since ghc 8.8.3)
 When using 'goldenVsFileDiff' or 'goldenVsStringDiff' under Windows the exit
 code from the diff program that you specify will not be captured correctly
 if that program uses @exec@.
@@ -67,17 +66,6 @@ This is different from the behavior prescribed by POSIX but is the best
 approximation that can be realised under the restrictions of the
 Windows process model.  See 'System.Process' for further details or
 <https://github.com/haskell/process/pull/168> for even more.
-
-=== For versions of @process@ before 1.6.8
-Earlier versions of @process@ may produce even less reliable results
-if the diff command uses @exec@. (e.g., the test harness may not wait
-for all the child processes of the diff command to complete.)
-<https://github.com/haskell/process/pull/80> has more details.
-
-=== Workarounds
-Use a simple diff program such as GNU DiffUtils for Windows, or you
-may even be able to use @git diff@ with appropriate parameters.
-Alternatively, you can fall back to using 'goldenVsFile'.
 
 -}
 
