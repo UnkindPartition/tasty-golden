@@ -106,7 +106,7 @@ import Control.Exception
 import Control.Monad
 import qualified Data.Set as Set
 #if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup
+import Data.Monoid
 #endif
 
 -- | Compare the output file's contents against the golden file's contents
