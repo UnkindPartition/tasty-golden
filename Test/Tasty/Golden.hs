@@ -105,7 +105,6 @@ import Test.Tasty.Golden.Advanced
 import Test.Tasty.Golden.Internal
 import Text.Printf
 import qualified Data.ByteString.Lazy as LBS
-import Data.Monoid
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 import System.IO
@@ -118,6 +117,9 @@ import System.PosixCompat.Files
 import Control.Exception
 import Control.Monad
 import qualified Data.Set as Set
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup
+#endif
 
 -- | Compare the output file's contents against the golden file's contents
 -- after the given action has created the output file.
