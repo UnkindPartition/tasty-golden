@@ -42,6 +42,8 @@ Source-repository head
 library
   Default-language:
     Haskell2010
+  default-extensions:
+    ScopedTypeVariables
   exposed-modules:     Test.Tasty.Golden
                        Test.Tasty.Golden.Advanced
                        Test.Tasty.Golden.Manage

@@ -110,7 +110,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 import System.IO
 import System.IO.Temp
-import System.Process.Typed
+import qualified System.Process.Typed as PT
 import System.Exit
 import System.FilePath
 import System.Directory
@@ -192,24 +192,10 @@ goldenVsFileDiff name cmdf ref new act =
         -- runGolden will handle by creating the golden file before proceeding.
         -- See #32.
     act
-    (cmp sizeCutoff)
+    (\_ _ -> runDiff (cmdf ref new) sizeCutoff)
     upd
     del
   where
-  cmd = cmdf ref new
-  cmp sizeCutoff _ _
-    | null cmd = error "goldenVsFileDiff: empty command line"
-    | otherwise = do
-
-    let procConf = setStdin closed
-                 $ setStdout byteStringOutput
-                 $ proc (head cmd) (tail cmd)
-
-    (exitCode, out, _err)  <- readProcess procConf
-    return $ case exitCode of
-      ExitSuccess -> Nothing
-      _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
-
   upd _ = readFileStrict new >>= createDirectoriesAndWriteFile ref
   del = removeFile new
 
@@ -245,17 +231,10 @@ goldenVsStringDiff name cmdf ref act =
     LBS.hPut tmpHandle actBS >> hFlush tmpHandle
 
     let cmd = cmdf ref tmpFile
+    diff_result :: Maybe String <- runDiff cmd sizeCutoff
 
-    when (null cmd) $ error "goldenVsFileDiff: empty command line"
-
-    let procConf = setStdin closed
-                 $ setStdout byteStringOutput
-                 $ proc (head cmd) (tail cmd)
-
-    (exitCode, out, _err)  <- readProcess procConf
-    return $ case exitCode of
-      ExitSuccess -> Nothing
-      _ -> Just (printf "Test output was different from '%s'. Output of %s:\n" ref (show cmd) <> unpackUtf8 (truncateLargeOutput sizeCutoff out))
+    return $ flip fmap diff_result $ \diff ->
+      printf "Test output was different from '%s'. Output of %s:\n" ref (show cmd) <> diff
 
   upd = createDirectoriesAndWriteFile ref
 
@@ -345,3 +324,22 @@ readFileStrict path = do
 
 unpackUtf8 :: LBS.ByteString -> String
 unpackUtf8 = LT.unpack . LT.decodeUtf8
+
+runDiff
+  :: [String] -- ^ the diff command
+  -> SizeCutoff
+  -> IO (Maybe String)
+runDiff cmd sizeCutoff =
+  case cmd of
+    [] -> throwIO $ ErrorCall "tasty-golden: empty diff command"
+    prog : args -> do
+      let
+        procConf =
+          PT.setStdin PT.closed
+          . PT.setStderr PT.inherit
+          $ PT.proc prog args
+
+      (exitCode, out) <- PT.readProcessStdout procConf
+      return $ case exitCode of
+        ExitSuccess -> Nothing
+        _ -> Just . unpackUtf8 . truncateLargeOutput sizeCutoff $ out
