@@ -13,8 +13,8 @@ description:
 
 license:             MIT
 license-file:        LICENSE
-Homepage:            https://github.com/feuerbach/tasty-golden
-Bug-reports:         https://github.com/feuerbach/tasty-golden/issues
+Homepage:            https://github.com/UnkindPartition/tasty-golden
+Bug-reports:         https://github.com/UnkindPartition/tasty-golden/issues
 author:              Roman Cheplyaka
 maintainer:          Roman Cheplyaka <roma@ro-che.info>
 -- copyright:
@@ -37,7 +37,7 @@ Tested-With:
 
 Source-repository head
   type:     git
-  location: git://github.com/feuerbach/tasty-golden.git
+  location: git://github.com/UnkindPartition/tasty-golden.git
 
 library
   Default-language:

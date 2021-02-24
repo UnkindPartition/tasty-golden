@@ -47,12 +47,12 @@ Available options:
                            files (default: never)
 ```
 
-See also [tasty's README](https://github.com/feuerbach/tasty/blob/master/README.md#runtime).
+See also [tasty's README](https://github.com/UnkindPartition/tasty/blob/master/README.md#runtime).
 
 Maintainers
 -----------
 
-[Roman Cheplyaka](https://github.com/feuerbach) is the primary maintainer.
+[Roman Cheplyaka](https://github.com/UnkindPartition) is the primary maintainer.
 
 [Oliver Charles](https://github.com/ocharles) is the backup maintainer. Please
 get in touch with him if the primary maintainer cannot be reached.
