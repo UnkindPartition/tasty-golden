@@ -129,18 +129,29 @@ runGolden (Golden getGolden getTested cmp update delete) opts = do
         mbRef <- try getGolden
 
         case mbRef of
-          Left e | isDoesNotExistError e ->
-            if noCreate
-              then
-                -- Don't ever delete the output file in this case, as there is
-                -- no duplicate golden file
-                return $ testFailed "Golden file does not exist; --no-create flag specified"
-              else do
+          Left e
+            | Just e' <- fromException e, isDoesNotExistError e' ->
+              if noCreate
+                then
+                  -- Don't ever delete the output file in this case, as there is
+                  -- no duplicate golden file
+                  return $ testFailed "Golden file does not exist; --no-create flag specified"
+                else do
+                  update new
+                  when (delOut `elem` [Always, OnPass]) delete
+                  return $ testPassed "Golden file did not exist; created"
+
+            | Just (_ :: AsyncException) <- fromException e -> throwIO e
+            | Just (_ :: IOError) <- fromException e -> throwIO e
+
+
+            | otherwise -> do
+                -- Other types of exceptions may be due to failing to decode the
+                -- golden file. In that case, it makes sense to replace a broken
+                -- golden file with the current version.
                 update new
                 when (delOut `elem` [Always, OnPass]) delete
-                return $ testPassed "Golden file did not exist; created"
-
-            | otherwise -> throwIO e
+                return $ testPassed $ "Accepted the new version. Was failing with exception:\n" ++ show e
 
           Right ref -> do
 
