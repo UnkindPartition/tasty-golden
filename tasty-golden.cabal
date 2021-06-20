@@ -20,7 +20,7 @@ maintainer:          Roman Cheplyaka <roma@ro-che.info>
 -- copyright:
 category:            Testing
 build-type:          Simple
-cabal-version:       >=1.14
+cabal-version:       1.14
 extra-source-files:
   CHANGELOG.md
   example/golden/fail/*.golden
