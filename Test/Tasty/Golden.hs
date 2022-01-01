@@ -101,10 +101,10 @@ import qualified System.Process.Typed as PT
 import System.Exit
 import System.FilePath
 import System.Directory
-import System.PosixCompat.Files
 import Control.Exception
 import Control.Monad
 import qualified Data.Set as Set
+import Foreign.C.Error
 #if !MIN_VERSION_base(4,11,0)
 import Data.Monoid
 #endif
@@ -176,11 +176,7 @@ goldenVsFileDiff name cmdf ref new act =
   askOption $ \sizeCutoff ->
   goldenTest2
     name
-    (getFileStatus ref >> return ())
-        -- Use getFileStatus to check if the golden file exists. If the file
-        -- doesn't exist, getFileStatus will throw an isDoesNotExistError that
-        -- runGolden will handle by creating the golden file before proceeding.
-        -- See #32.
+    (throwIfDoesNotExist ref)
     act
     (\_ _ -> runDiff (cmdf ref new) sizeCutoff)
     upd
@@ -188,6 +184,15 @@ goldenVsFileDiff name cmdf ref new act =
   where
   upd _ = readFileStrict new >>= createDirectoriesAndWriteFile ref
   del = removeFile new
+
+-- If the golden file doesn't exist, throw an isDoesNotExistError that
+-- runGolden will handle by creating the golden file before proceeding.
+-- See #32.
+throwIfDoesNotExist :: FilePath -> IO ()
+throwIfDoesNotExist ref = do
+  exists <- doesFileExist ref
+  unless exists $ ioError $
+    errnoToIOError "goldenVsFileDiff" eNOENT Nothing Nothing
 
 -- | Same as 'goldenVsString', but invokes an external diff command.
 --
