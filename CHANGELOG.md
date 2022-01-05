@@ -1,6 +1,13 @@
 Changes
 =======
 
+Version 2.3.5
+-------------
+
+* Fixes for launching external processes (like diff) on Windows
+* Update the golden file on --accept if decoding the golden file failed with an exception
+* Do not depend on unix-compat
+
 Version 2.3.4
 -------------
 
