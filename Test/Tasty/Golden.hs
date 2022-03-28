@@ -108,6 +108,8 @@ import Foreign.C.Error
 #if !MIN_VERSION_base(4,11,0)
 import Data.Monoid
 #endif
+import System.Environment
+import Data.Maybe
 
 -- | Compare the output file's contents against the golden file's contents
 -- after the given action has created the output file.
@@ -297,11 +299,18 @@ createDirectoriesAndWriteFile
   -> LBS.ByteString
   -> IO ()
 createDirectoriesAndWriteFile path bs = do
+  -- Look for bazel workspace and if it exists, change the root directory for
+  -- file creation.
+  -- This is useful when used in bazel run context. Your test is run inside the
+  -- bazel runfiles directory, but you want to modify the golden references in
+  -- your source tree.
+  workspace <- fromMaybe "." <$> lookupEnv "BUILD_WORKING_DIRECTORY"
+
   let dir = takeDirectory path
   createDirectoryIfMissing
     True -- create parents too
-    dir
-  LBS.writeFile path bs
+    (workspace </> dir)
+  LBS.writeFile (workspace </> path) bs
 
 -- | Force the evaluation of a lazily-produced bytestring.
 --
@@ -318,7 +327,7 @@ readFileStrict path = do
   return s
 
 unpackUtf8 :: LBS.ByteString -> String
-unpackUtf8 = LT.unpack . LT.decodeUtf8
+unpackUtf8 = LT.unpack . LT.decodeUtf8 LT.lenientDecode
 
 runDiff
   :: [String] -- ^ the diff command
