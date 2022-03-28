@@ -327,7 +327,7 @@ readFileStrict path = do
   return s
 
 unpackUtf8 :: LBS.ByteString -> String
-unpackUtf8 = LT.unpack . LT.decodeUtf8
+unpackUtf8 = LT.unpack . LT.decodeUtf8 LT.lenientDecode
 
 runDiff
   :: [String] -- ^ the diff command
