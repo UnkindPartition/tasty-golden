@@ -81,6 +81,7 @@ module Test.Tasty.Golden
     -- * Options
   , SizeCutoff(..)
   , DeleteOutputFile(..)
+  , NoCreateFile(..)
     -- * Various utilities
   , writeBinaryFile
   , findByExtension
