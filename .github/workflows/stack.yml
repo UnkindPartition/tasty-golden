@@ -1,0 +1,99 @@
+name: Stack build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  stack:
+    name: Stack ${{ matrix.plan.resolver }} / ${{ matrix.plan.ghc }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        plan:
+          - ghc: '9.8.2'
+            resolver: 'nightly-2024-07-17'
+          - ghc: '9.6.6'
+            resolver: 'lts-22.29'
+          - ghc: '9.4.8'
+            resolver: 'lts-21.25'
+          - ghc: '9.2.8'
+            resolver: 'lts-20.26'
+          - ghc: '9.0.2'
+            resolver: 'lts-19.33'
+          - ghc: '8.10.7'
+            resolver: 'lts-18.28'
+          # Dependency tasty >= 1.3 rules out older snapshots
+          # - ghc: '8.8.4'
+          #   resolver: 'lts-16.31'
+          # - ghc: '8.6.5'
+          #   resolver: 'lts-14.27'
+          # - ghc: '8.4.4'
+          #   resolver: 'lts-12.26'
+        include:
+          - os: macos-latest
+            plan:
+              ghc: '9.8.2'
+              resolver: 'nightly-2024-07-17'
+          - os: windows-latest
+            plan:
+              ghc: '9.8.2'
+              resolver: 'nightly-2024-07-17'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: haskell-actions/setup@v2
+      id: setup
+      with:
+        ghc-version: ${{ matrix.plan.ghc }}
+        enable-stack: true
+        cabal-update: false
+
+    - name: Restore cache
+      uses: actions/cache/restore@v4
+      id: cache
+      env:
+        key: ${{ runner.os }}-stack-${{ steps.setup.outputs.stack-version }}-ghc-${{ steps.setup.outputs.ghc-version }}
+      with:
+        key: ${{ env.key }}-commit-${{ github.sha }}
+        restore-keys: ${{ env.key }}-
+        path: |
+          ${{ steps.setup.outputs.stack-root }}
+          .stack-work
+
+    - name: Create stack.yaml
+      run:  |
+        echo "resolver: ${{ matrix.plan.resolver }}" > stack.yaml
+
+    - name: Build dependencies
+      run:  stack test --system-ghc --only-dependencies
+
+    - name: Build
+      run:  stack build --system-ghc
+
+    - name: Build w/ test
+      run:  stack test --system-ghc --no-run-tests
+
+    - name: Run test
+      # Tests are broken on Windows because of slash/backslash mismatch
+      if:   runner.os != 'Windows'
+      run:  stack test --system-ghc
+
+    - name: Save cache
+      uses: actions/cache/save@v4
+      if: always() && steps.cache.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+        path: |
+          ${{ steps.setup.outputs.stack-root }}
+          .stack-work
