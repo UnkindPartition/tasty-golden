@@ -20,10 +20,14 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         plan:
-          - ghc: '9.8.2'
-            resolver: 'nightly-2024-07-17'
-          - ghc: '9.6.6'
-            resolver: 'lts-22.29'
+          - ghc: '9.12.2'
+            resolver: 'nightly-2025-12-10'
+          - ghc: '9.10.3'
+            resolver: 'lts-24.23'
+          - ghc: '9.8.4'
+            resolver: 'lts-23.28'
+          - ghc: '9.6.7'
+            resolver: 'lts-22.44'
           - ghc: '9.4.8'
             resolver: 'lts-21.25'
           - ghc: '9.2.8'
@@ -42,15 +46,15 @@ jobs:
         include:
           - os: macos-latest
             plan:
-              ghc: '9.8.2'
-              resolver: 'nightly-2024-07-17'
+              ghc: '9.12.2'
+              resolver: 'nightly-2025-12-10'
           - os: windows-latest
             plan:
-              ghc: '9.8.2'
-              resolver: 'nightly-2024-07-17'
+              ghc: '9.12.2'
+              resolver: 'nightly-2025-12-10'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - uses: haskell-actions/setup@v2
       id: setup
@@ -60,7 +64,7 @@ jobs:
         cabal-update: false
 
     - name: Restore cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       id: cache
       env:
         key: ${{ runner.os }}-stack-${{ steps.setup.outputs.stack-version }}-ghc-${{ steps.setup.outputs.ghc-version }}
@@ -90,7 +94,7 @@ jobs:
       run:  stack test --system-ghc
 
     - name: Save cache
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       if: always() && steps.cache.outputs.cache-hit != 'true'
       with:
         key: ${{ steps.cache.outputs.cache-primary-key }}
