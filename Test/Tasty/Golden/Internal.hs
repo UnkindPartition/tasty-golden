@@ -1,11 +1,10 @@
-{-# LANGUAGE RankNTypes, ExistentialQuantification, DeriveDataTypeable,
+{-# LANGUAGE RankNTypes, ExistentialQuantification,
     MultiParamTypeClasses, GeneralizedNewtypeDeriving, CPP #-}
 module Test.Tasty.Golden.Internal where
 
 import Control.DeepSeq
 import Control.Exception
 import Control.Monad (when)
-import Data.Typeable (Typeable)
 import Data.Proxy
 import Data.Int
 import Data.Char (toLower)
@@ -26,12 +25,11 @@ data Golden =
       (a -> a -> IO (Maybe String))
       (a -> IO ())
       (IO ())
-  deriving Typeable
 
 -- | This option, when set to 'True', specifies that we should run in the
 -- «accept tests» mode
 newtype AcceptTests = AcceptTests Bool
-  deriving (Eq, Ord, Typeable)
+  deriving (Eq, Ord)
 instance IsOption AcceptTests where
   defaultValue = AcceptTests False
   parseValue = fmap AcceptTests . safeReadBool
@@ -42,7 +40,7 @@ instance IsOption AcceptTests where
 -- | This option, when set to 'True', specifies to error when a file does
 -- not exist, instead of creating a new file.
 newtype NoCreateFile = NoCreateFile Bool
-  deriving (Eq, Ord, Typeable)
+  deriving (Eq, Ord)
 instance IsOption NoCreateFile where
   defaultValue = NoCreateFile False
   parseValue = fmap NoCreateFile . safeReadBool
@@ -58,7 +56,7 @@ instance IsOption NoCreateFile where
 --
 -- @since 2.3.3
 newtype SizeCutoff = SizeCutoff { getSizeCutoff :: Int64 }
-  deriving (Eq, Ord, Typeable, Num, Real, Enum, Integral)
+  deriving (Eq, Ord, Num, Real, Enum, Integral)
 instance IsOption SizeCutoff where
   defaultValue = 1000
   showDefaultValue = Just . show . getSizeCutoff
@@ -76,7 +74,7 @@ data DeleteOutputFile
   | OnPass -- ^ Delete the output file if the test passes
   | Always -- ^ Always delete the output file. (May not be commonly used,
            --   but provided for completeness.)
-  deriving (Eq, Ord, Typeable, Show)
+  deriving (Eq, Ord, Show)
 
 -- | This option controls when / whether the test output file is deleted
 -- For example, it may be convenient to delete the output file when a test

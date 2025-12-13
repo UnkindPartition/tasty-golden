@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards, DeriveDataTypeable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, PatternGuards #-}
 -- | Previously, accepting tests (by the @--accept@ flag) was done by this
 -- module, and there was an ingredient to handle that mode.
 --

@@ -1,6 +1,11 @@
 Changes
 =======
 
+Unreleased
+----------
+
+* Drop support for GHC 7, remove obsoleted `deriving Typeable`
+
 Version 2.3.5
 -------------
 
