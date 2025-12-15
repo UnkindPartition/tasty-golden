@@ -21,8 +21,12 @@ maintainer:          Roman Cheplyaka <roma@ro-che.info>
 -- copyright:
 category:            Testing
 build-type:          Simple
-extra-source-files:
+
+extra-doc-files:
   CHANGELOG.md
+  README.md
+
+extra-source-files:
   example/golden/fail/*.golden
   example/golden/success/*.golden
   tests/golden/*.golden
