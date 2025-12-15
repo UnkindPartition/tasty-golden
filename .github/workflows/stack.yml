@@ -78,6 +78,10 @@ jobs:
     - name: Create stack.yaml
       run:  |
         echo "resolver: ${{ matrix.plan.resolver }}" > stack.yaml
+      # echo "flags: { tasty-golden: { build-example: true }}" >> stack.yaml
+      # Andreas Abel, 2025-12-15
+      # The golden values created by the example are not portable,
+      # so running the example test on CI fails.
 
     - name: Build dependencies
       run:  stack test --system-ghc --only-dependencies

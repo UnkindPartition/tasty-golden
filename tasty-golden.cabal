@@ -1,4 +1,4 @@
-cabal-version:       1.14
+cabal-version:       2.0
 name:                tasty-golden
 version:             2.3.6
 synopsis:            Golden tests support for tasty
@@ -93,6 +93,7 @@ Test-suite test
     , temporary
   if (flag(build-example))
     cpp-options: -DBUILD_EXAMPLE
+    build-tool-depends: tasty-golden:example
   Ghc-options: -threaded
 
 flag build-example

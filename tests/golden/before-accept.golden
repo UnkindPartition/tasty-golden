@@ -7,6 +7,7 @@ Tests
   Failing tests
     goldenVsFile:       FAIL
       Files 'example/golden/fail/goldenVsFile.golden' and 'example/golden/fail/goldenVsFile.actual' differ
+      Use -p '$0=="Tests.Failing tests.goldenVsFile"' to rerun this test only.
     goldenVsFileDiff:   FAIL
       1d0
       < 1
@@ -35,6 +36,7 @@ Tests
       169d156
       <<truncated>
       Use --accept or increase --size-cutoff to see full output.
+      Use -p '/Failing tests.goldenVsFileDiff/' to rerun this test only.
     goldenVsString:     FAIL
       Test output was different from 'example/golden/fail/goldenVsString.golden'. It was:
       2
@@ -87,8 +89,9 @@ Tests
       55
       56<truncated>
       Use --accept or increase --size-cutoff to see full output.
+      Use -p '$0=="Tests.Failing tests.goldenVsString"' to rerun this test only.
     goldenVsStringDiff: FAIL
-      Test output was different from 'example/golden/fail/goldenVsStringDiff.golden'. Output of ["diff","example/golden/fail/goldenVsStringDiff.golden","/tmp/goldenVsStringDiff.actual"]:
+      Test output was different from 'example/golden/fail/goldenVsStringDiff.golden'. Output of ["diff","example/golden/fail/goldenVsStringDiff.golden","/private/var/folders/19/d9jtc4c5365g3c_5jjk7m_980000gn/T/goldenVsStringDiff.actual"]:
       1d0
       < 1
       4d2
@@ -116,5 +119,6 @@ Tests
       169d156
       <<truncated>
       Use --accept or increase --size-cutoff to see full output.
+      Use -p '/Failing tests.goldenVsStringDiff/' to rerun this test only.
 
 4 out of 8 tests failed
