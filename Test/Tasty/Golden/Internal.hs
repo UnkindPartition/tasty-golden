@@ -39,6 +39,8 @@ instance IsOption AcceptTests where
 
 -- | This option, when set to 'True', specifies to error when a file does
 -- not exist, instead of creating a new file.
+--
+-- @since 2.3.6
 newtype NoCreateFile = NoCreateFile Bool
   deriving (Eq, Ord)
 instance IsOption NoCreateFile where

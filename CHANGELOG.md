@@ -1,17 +1,22 @@
 Changes
 =======
 
-Unreleased
-----------
+Version 2.3.6
+-------------
 
-* Drop support for GHC 7, remove obsoleted `deriving Typeable`
+* Option `--no-create-file` now available internally as `NoCreateFile`
+  ([Issue #50](https://github.com/UnkindPartition/tasty-golden/issues/50))
+* Drop support for GHC 7, remove obsolete `deriving Typeable`
+* Tested with GHC 8.0 - 9.14.0
+
+_Andreas Abel, 2025-12-15_
 
 Version 2.3.5
 -------------
 
-* Fixes for launching external processes (like diff) on Windows
-* Update the golden file on --accept if decoding the golden file failed with an exception
-* Do not depend on unix-compat
+* Fixes for launching external processes (like `diff`) on Windows
+* Update the golden file on `--accept` if decoding the golden file failed with an exception
+* Do not depend on `unix-compat`
 
 Version 2.3.4
 -------------
@@ -76,12 +81,12 @@ contract.
 Version 2.3.0.2
 ---------------
 
-Switch from temporary-rc to temporary
+Switch from `temporary-rc` to `temporary`
 
 Version 2.3.0.1
 ---------------
 
-Impose a lower bound version constraint on bytestring.
+Impose a lower bound version constraint on `bytestring`.
 
 Version 2.3
 -----------
