@@ -7,9 +7,9 @@ Version 2.3.6
 * Option `--no-create-file` now available internally as `NoCreateFile`
   ([Issue #50](https://github.com/UnkindPartition/tasty-golden/issues/50))
 * Drop support for GHC 7, remove obsolete `deriving Typeable`
-* Tested with GHC 8.0 - 9.14.0
+* Tested with GHC 8.0 - 9.14.1
 
-_Andreas Abel, 2025-12-15_
+_Andreas Abel, 2026-02-01_
 
 Version 2.3.5
 -------------
